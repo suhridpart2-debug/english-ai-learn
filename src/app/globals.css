@@ -1,0 +1,66 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+  --font-display: var(--font-outfit), ui-sans-serif, system-ui, sans-serif;
+  
+  --color-primary-50: #EEF2FF;
+  --color-primary-100: #E0E7FF;
+  --color-primary-200: #C7D2FE;
+  --color-primary-300: #A5B4FC;
+  --color-primary-400: #818CF8;
+  --color-primary-500: #6366F1;
+  --color-primary-600: #4F46E5;
+  --color-primary-700: #4338CA;
+  --color-primary-800: #3730A3;
+  --color-primary-900: #312E81;
+}
+
+@layer base {
+  :root {
+    --background: #f8fafc;
+    --foreground: #020617;
+  }
+  
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --background: #020617;
+      --foreground: #f8fafc;
+    }
+  }
+}
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+}
+
+@layer utilities {
+  .glass {
+    background-color: rgb(255 255 255 / 0.7);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgb(255 255 255 / 0.2);
+    box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  }
+  
+  @media (prefers-color-scheme: dark) {
+    .glass {
+      background-color: rgb(15 23 42 / 0.7);
+      border-color: rgb(30 41 59 / 0.5);
+    }
+  }
+
+  .text-gradient {
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: transparent;
+    background-image: linear-gradient(to right, var(--color-primary-500), var(--color-primary-700));
+  }
+  
+  @media (prefers-color-scheme: dark) {
+    .text-gradient {
+      background-image: linear-gradient(to right, var(--color-primary-400), var(--color-primary-500));
+    }
+  }
+}
