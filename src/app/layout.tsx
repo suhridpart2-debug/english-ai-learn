@@ -14,6 +14,7 @@ const outfit = Outfit({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://english-ai-learn.vercel.app"),
   title: "SpeakAI - AI English Coach",
   description: "Master spoken English with your personal AI Coach.",
   manifest: "/manifest.json",
