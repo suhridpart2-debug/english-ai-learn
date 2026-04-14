@@ -7,6 +7,7 @@ import { Flame, Clock, CalendarDays, ArrowRight, Play, TrendingUp, AlertCircle, 
 import Link from "next/link";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { supabase } from "@/lib/supabaseClient";
+import { DailyVideoWidget } from "@/components/video/DailyVideoWidget";
 
 interface StatData {
   current_streak: number;
@@ -208,6 +209,9 @@ export default function DashboardPage() {
           </div>
         </Card>
       </div>
+
+      {/* Daily English Videos Section */}
+      <DailyVideoWidget />
 
       <div className="grid md:grid-cols-3 gap-8">
         <div className="md:col-span-2 space-y-8">

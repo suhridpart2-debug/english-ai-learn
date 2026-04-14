@@ -1,7 +1,7 @@
 "use client";
 
 import { Card } from "@/components/ui/card";
-import { BookOpen, Languages, ArrowRight, GraduationCap, Star } from "lucide-react";
+import { BookOpen, Languages, ArrowRight, GraduationCap, Star, Play } from "lucide-react";
 import Link from "next/link";
 import { VOCABULARY_DATA, VOCABULARY_TOPICS } from "@/lib/data/vocabularyData";
 import { GRAMMAR_TOPICS } from "@/lib/data/grammarData";
@@ -66,6 +66,38 @@ export default function LearnHub() {
           </Card>
         </Link>
       </div>
+
+      {/* Daily Video Section */}
+      <section className="animate-in fade-in slide-in-from-bottom-4 duration-700 delay-150">
+        <Link href="/learn/videos" className="block group">
+          <Card className="overflow-hidden bg-gradient-to-br from-orange-500 to-red-600 text-white relative border-none shadow-xl shadow-orange-900/20 p-6 md:p-8 hover:scale-[1.01] transition-transform">
+            <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-[80px]" />
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
+              <div className="flex-1">
+                <div className="w-14 h-14 bg-white/20 rounded-2xl flex items-center justify-center mb-6 backdrop-blur-sm">
+                  <Play className="w-7 h-7 text-white" />
+                </div>
+                <h2 className="text-2xl font-display font-bold mb-2">Daily English Videos</h2>
+                <p className="text-orange-50 mb-3 max-w-xl">
+                  New curated content every 6 hours. Improve listening, learn real-world vocabulary, and start speaking practice immediately.
+                </p>
+                <div className="flex items-center text-sm font-bold bg-white/20 w-fit px-4 py-2 rounded-full backdrop-blur-sm group-hover:bg-white group-hover:text-orange-700 transition-colors">
+                  Watch Daily Videos <ArrowRight className="w-4 h-4 ml-2" />
+                </div>
+              </div>
+              <div className="flex gap-4 overflow-hidden mask-fade-right md:w-1/2">
+                 <div className="flex gap-3 animate-marquee">
+                    {[1,2,3].map(i => (
+                       <div key={i} className="w-40 aspect-video bg-white/10 rounded-xl border border-white/20 flex items-center justify-center shrink-0">
+                          <Play className="w-6 h-6 text-white/40" />
+                       </div>
+                    ))}
+                 </div>
+              </div>
+            </div>
+          </Card>
+        </Link>
+      </section>
 
       {/* Quick access: Grammar Topics */}
       <section>
