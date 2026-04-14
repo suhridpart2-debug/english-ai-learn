@@ -44,10 +44,10 @@ export default function VideoPlayerPage() {
     });
   }, [videoId, video, router]);
 
-  const handleProgress = (state: { playedSeconds: number }) => {
-    const currentSecs = Math.floor(state.playedSeconds);
+  const handleProgress = (state: any) => {
+    const currentSecs = Math.floor(state.playedSeconds || 0);
     // Periodically update progress every 10 seconds or near the end
-    if (currentSecs % 10 === 0 || currentSecs > video!.duration - 5) {
+    if (currentSecs > 0 && (currentSecs % 10 === 0 || currentSecs > video!.duration - 5)) {
       VideoService.updateProgress(videoId, isWatched, currentSecs);
     }
   };
@@ -97,7 +97,7 @@ export default function VideoPlayerPage() {
         {/* Video Player Section */}
         <div className="aspect-video bg-black rounded-2xl overflow-hidden shadow-2xl relative">
           <ReactPlayer
-            url={`https://www.youtube.com/watch?v=${video.youtubeId}`}
+            src={`https://www.youtube.com/watch?v=${video.youtubeId}`}
             width="100%"
             height="100%"
             controls
@@ -105,8 +105,9 @@ export default function VideoPlayerPage() {
             onEnded={handleEnded}
             config={{
                 youtube: {
-                    playerVars: { showinfo: 0, rel: 0 }
-                }
+                    rel: 0,
+                    enablejsapi: 1
+                } as any
             }}
           />
         </div>
