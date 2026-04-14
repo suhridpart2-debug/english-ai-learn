@@ -86,9 +86,8 @@ function LoginContent() {
     setIsLoading(true);
 
     try {
-      // Use the production URL from env vars, falling back to window.location.origin if not set
-      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin;
-      const callbackUrl = `${siteUrl.replace(/\/$/, "")}/auth/callback`;
+      // Use window.location.origin to ensure the state remains valid for the current domain (localhost vs production)
+      const callbackUrl = `${window.location.origin}/auth/callback`;
       
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
