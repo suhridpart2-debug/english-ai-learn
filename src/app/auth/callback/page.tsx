@@ -12,13 +12,63 @@ function AuthCallbackContent() {
 
   useEffect(() => {
     const handleAuthCallback = async () => {
-      const { data: { session }, error } = await supabase.auth.getSession();
+      console.log("AuthCallback: Checking initial session...");
+      
+      // 1. Check current session immediately
+      const { data: { session }, error: initialError } = await supabase.auth.getSession();
       
       if (session) {
-        // Init profile for Google users if needed
-        const { data: profile } = await supabase.from('profiles').select('id').eq('id', session.user.id).single();
+        console.log("AuthCallback: Session found immediately for", session.user.email);
+        await processAuthenticatedSession(session);
+        return;
+      }
+
+      if (initialError) {
+        console.error("AuthCallback: Initial session check error", initialError);
+      }
+
+      // 2. Setup listener for fragment-based login (OAuth)
+      // Some browsers/environments take a moment to parse the fragment
+      console.log("AuthCallback: No immediate session, setting up listener...");
+      
+      const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+        console.log("AuthCallback: Auth state change event:", event);
+        
+        if (event === 'SIGNED_IN' && session) {
+          console.log("AuthCallback: SIGNED_IN event received for", session.user.email);
+          subscription.unsubscribe();
+          await processAuthenticatedSession(session);
+        } else if (event === 'INITIAL_SESSION' && !session) {
+          // If we still have no session after initial check and fragment would have been processed
+          console.log("AuthCallback: INITIAL_SESSION event with no session. Fallback to timeout.");
+        }
+      });
+
+      // 3. Fallback timeout to prevent infinite loading if auth truly failed
+      const timeoutToken = setTimeout(() => {
+        console.log("AuthCallback: Auth timeout reached, redirecting to login.");
+        subscription.unsubscribe();
+        router.replace("/auth/login");
+      }, 5000);
+
+      return () => {
+        subscription.unsubscribe();
+        clearTimeout(timeoutToken);
+      };
+    };
+
+    const processAuthenticatedSession = async (session: any) => {
+      try {
+        console.log("AuthCallback: Processing profile for", session.user.id);
+        
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('id', session.user.id)
+          .single();
         
         if (!profile) {
+          console.log("AuthCallback: Creating new profile...");
           await supabase.from('profiles').upsert({
             id: session.user.id,
             name: session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || "Student",
@@ -36,10 +86,11 @@ function AuthCallbackContent() {
           });
         }
         
+        console.log("AuthCallback: Redirecting to", redirectParams);
         router.replace(redirectParams);
-      } else {
-        console.error("Auth error", error);
-        router.replace("/auth/login");
+      } catch (err) {
+        console.error("AuthCallback: Error processing profile", err);
+        router.replace(redirectParams); // Proceed anyway to dashboard as session is valid
       }
     };
 

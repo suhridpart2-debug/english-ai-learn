@@ -24,14 +24,18 @@ function LoginContent() {
   useEffect(() => {
     const checkSession = async () => {
       try {
+        console.log("LoginPage: Checking for active session...");
         const { data, error } = await supabase.auth.getSession();
 
         if (!error && data.session) {
+          console.log("LoginPage: Active session found for", data.session.user.email, "- Redirecting to", redirectParams);
           router.replace(redirectParams);
           return;
         }
+        
+        console.log("LoginPage: No active session found, showing login form.");
       } catch (err) {
-        console.error("Session check error:", err);
+        console.error("LoginPage: Session check error:", err);
       } finally {
         setCheckingSession(false);
       }
