@@ -19,8 +19,11 @@ export function VideoCard({ video, isWatched, isSaved, progress }: VideoCardProp
         {/* Thumbnail Placeholder / Image */}
         <div className="aspect-video bg-slate-100 dark:bg-slate-900 relative">
           <img 
-            src={`https://img.youtube.com/vi/${video.youtubeId}/mqdefault.jpg`} 
+            src={`https://i.ytimg.com/vi/${video.youtubeId}/hqdefault.jpg`} 
             alt={video.title}
+            onError={(e) => {
+              (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=800&auto=format&fit=crop'; // Educational fallback image
+            }}
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
           />
           <div className="absolute inset-0 bg-black/20 group-hover:bg-black/10 transition-colors" />

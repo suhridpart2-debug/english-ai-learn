@@ -24,7 +24,7 @@ export default function VideoPlayerPage() {
   const [isSaved, setIsSaved] = useState(false);
   const [isWatched, setIsWatched] = useState(false);
   const [progress, setProgress] = useState(0);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isReplacing, setIsReplacing] = useState(false);
 
   useEffect(() => {
     if (!video) {
@@ -40,9 +40,22 @@ export default function VideoPlayerPage() {
         setIsWatched(p.watched);
         setProgress(p.progress_seconds || 0);
       }
-      setIsLoading(false);
     });
   }, [videoId, video, router]);
+
+  const handleError = () => {
+    console.error("Video failed to load, finding fallback...");
+    setIsReplacing(true);
+    
+    // Find a fallback video that isn't the current one
+    const fallback = VideoService.getFallbackVideo([videoId]);
+    
+    // Smooth transition
+    setTimeout(() => {
+      router.replace(`/learn/videos/${fallback.id}`);
+      setIsReplacing(false);
+    }, 1500);
+  };
 
   const handleProgress = (state: any) => {
     const currentSecs = Math.floor(state.playedSeconds || 0);
@@ -96,20 +109,29 @@ export default function VideoPlayerPage() {
       <div className="max-w-4xl mx-auto space-y-6 p-4 md:p-6">
         {/* Video Player Section */}
         <div className="aspect-video bg-black rounded-2xl overflow-hidden shadow-2xl relative">
-          <ReactPlayer
-            src={`https://www.youtube.com/watch?v=${video.youtubeId}`}
-            width="100%"
-            height="100%"
-            controls
-            onProgress={handleProgress}
-            onEnded={handleEnded}
-            config={{
-                youtube: {
-                    rel: 0,
-                    enablejsapi: 1
-                } as any
-            }}
-          />
+          {isReplacing ? (
+            <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-900 text-white z-20">
+              <Sparkles className="w-10 h-10 mb-4 text-primary-400 animate-pulse" />
+              <p className="text-lg font-bold">Refreshing video content...</p>
+              <p className="text-sm text-slate-400 mt-2">Connecting you to another lesson.</p>
+            </div>
+          ) : (
+            <ReactPlayer
+              src={`https://www.youtube.com/embed/${video.youtubeId}`}
+              width="100%"
+              height="100%"
+              controls
+              onProgress={handleProgress}
+              onEnded={handleEnded}
+              onError={handleError}
+              config={{
+                  youtube: {
+                      rel: 0,
+                      enablejsapi: 1
+                  } as any
+              }}
+            />
+          )}
         </div>
 
         {/* Metadata Controls */}

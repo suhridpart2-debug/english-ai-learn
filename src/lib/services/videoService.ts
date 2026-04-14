@@ -102,9 +102,29 @@ export class VideoService {
   }
 
   /**
+   * Returns a fallback video from the pool that isn't in the provided exclude list.
+   */
+  static getFallbackVideo(excludeIds: string[]): VideoLearningObject {
+    const pool = DAILY_VIDEOS.filter(v => !excludeIds.includes(v.id));
+    // If we've exhausted everything (unlikely), just return the first one
+    if (pool.length === 0) return DAILY_VIDEOS[0];
+    
+    // Pick one at random from the pool
+    const randomIndex = Math.floor(Math.random() * pool.length);
+    return pool[randomIndex];
+  }
+
+  /**
    * Fetches user progress for a set of videos
    */
   static async getUserProgress(videoIds: string[]) {
+    // Basic validation to avoid UUID syntax errors in Supabase
+    const validIds = videoIds.filter(id => 
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)
+    );
+
+    if (validIds.length === 0) return {};
+
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return {};
 
@@ -112,7 +132,7 @@ export class VideoService {
       .from('user_video_progress')
       .select('*')
       .eq('user_id', user.id)
-      .in('video_id', videoIds);
+      .in('video_id', validIds);
 
     if (error) {
         console.error("Error fetching video progress:", error);
