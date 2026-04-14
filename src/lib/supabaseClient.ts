@@ -1,6 +1,5 @@
-import { createClient } from '@supabase/supabase-js'
+import { createClient } from './supabase/client'
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-
-export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+// This file is kept for backward compatibility with existing components
+// It now uses the @supabase/ssr browser client to ensure session consistency
+export const supabase = createClient()

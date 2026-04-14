@@ -8,12 +8,13 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Mic, Globe, Loader2 } from "lucide-react";
-import { supabase } from "@/lib/supabaseClient";
+import { createClient } from "@/lib/supabase/client";
 
 function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirectParams = searchParams.get("redirect") || "/dashboard";
+  const supabase = createClient();
 
   const [checkingSession, setCheckingSession] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
@@ -42,7 +43,7 @@ function LoginContent() {
     };
 
     checkSession();
-  }, [router, redirectParams]);
+  }, [router, redirectParams, supabase]);
 
   const handleEmailLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -61,14 +62,6 @@ function LoginContent() {
       });
 
       if (error) {
-        if (
-          error.message?.toLowerCase().includes("supabaseurl is required") ||
-          error.message?.toLowerCase().includes("url is required")
-        ) {
-          alert("Supabase environment variables are missing. Please check your .env.local file.");
-          return;
-        }
-
         alert(error.message);
         return;
       }
@@ -86,25 +79,28 @@ function LoginContent() {
     setIsLoading(true);
 
     try {
-      // Use window.location.origin to ensure the state remains valid for the current domain (localhost vs production)
-      const callbackUrl = `${window.location.origin}/auth/callback`;
+      // Use window.location.origin to detect if we are on localhost or production
+      const isProduction = !window.location.hostname.includes('localhost');
+      const origin = isProduction 
+        ? 'https://english-ai-learn.vercel.app' 
+        : window.location.origin;
+        
+      const callbackUrl = `${origin}/auth/callback`;
       
+      console.log("LoginPage: Redirecting to Google OAuth with callback:", callbackUrl);
+
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
-          redirectTo: `${callbackUrl}?redirect=${encodeURIComponent(redirectParams)}`,
+          redirectTo: `${callbackUrl}?next=${encodeURIComponent(redirectParams)}`,
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent',
+          },
         },
       });
 
       if (error) {
-        if (
-          error.message?.toLowerCase().includes("supabaseurl is required") ||
-          error.message?.toLowerCase().includes("url is required")
-        ) {
-          alert("Supabase environment variables are missing. Please check your .env.local file.");
-          return;
-        }
-
         alert(error.message);
       }
     } catch (err) {
