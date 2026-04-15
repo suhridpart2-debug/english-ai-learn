@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Mic, Square, RotateCcw, Play, CheckCircle2, AlertCircle, Loader2, Volume2, Sparkles, History, ChevronRight } from "lucide-react";
+import { Mic, Square, RotateCcw, Play, CheckCircle2, AlertCircle, Loader2, Volume2, Sparkles, History, ChevronRight, Turtle, CheckCircle, XCircle } from "lucide-react";
 import { READ_ALOUD_PASSAGES, ReadAloudPassage } from "@/lib/data/readAloudData";
 import { motion, AnimatePresence } from "framer-motion";
 import { createClient } from "@/lib/supabase/client";
@@ -20,7 +20,10 @@ interface Result {
   score: number;
   transcript: string;
   mistakes: Mistake[];
-  aiFeedback: string;
+  aiFeedback: {
+    good: string;
+    improvement: string;
+  };
 }
 
 export default function ReadAloudPage() {
@@ -30,9 +33,41 @@ export default function ReadAloudPage() {
   const [result, setResult] = useState<Result | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [isSlowMode, setIsSlowMode] = useState(false);
   
   const recognitionRef = useRef<any>(null);
   const supabase = createClient();
+
+  // --- TTS Helper ---
+  const speak = (text: string, rate = 0.85) => {
+    if (typeof window === "undefined" || !window.speechSynthesis) {
+      setError("Text-to-speech is not supported in this browser.");
+      return;
+    }
+    
+    // Cancel any ongoing speech
+    window.speechSynthesis.cancel();
+    
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = "en-US";
+    utterance.rate = rate;
+    
+    utterance.onstart = () => setIsPlaying(true);
+    utterance.onend = () => setIsPlaying(false);
+    utterance.onerror = () => setIsPlaying(false);
+    
+    window.speechSynthesis.speak(utterance);
+  };
+
+  useEffect(() => {
+    // Cleanup speech on unmount
+    return () => {
+      if (typeof window !== "undefined" && window.speechSynthesis) {
+         window.speechSynthesis.cancel();
+      }
+    };
+  }, []);
 
   // Initialize Speech Recognition
   useEffect(() => {
@@ -118,7 +153,7 @@ export default function ReadAloudPage() {
         score,
         transcript,
         mistakes,
-        aiFeedback: feedbackData.feedback
+        aiFeedback: feedbackData
       };
 
       setResult(finalResult);
@@ -132,7 +167,7 @@ export default function ReadAloudPage() {
           recognized_text: transcript,
           score_accuracy: score,
           mistakes: mistakes,
-          ai_feedback: feedbackData.feedback
+          ai_feedback: JSON.stringify(feedbackData)
         });
 
         // Also track weak words
@@ -231,13 +266,34 @@ export default function ReadAloudPage() {
                     return (
                       <span 
                         key={i} 
-                        className={isMistake ? "text-red-500 underline decoration-red-300 decoration-2 underline-offset-4" : ""}
+                        onClick={() => speak(cleanWord, isSlowMode ? 0.6 : 0.85)}
+                        className={`cursor-pointer transition-colors hover:text-primary-500 ${isMistake ? "text-red-500 underline decoration-red-300 decoration-2 underline-offset-4" : ""}`}
+                        title="Tap to hear"
                       >
                         {word}{" "}
                       </span>
                     );
                   })}
                </p>
+
+               {/* Full Sentence Audio Controls */}
+               <div className="flex gap-4 pt-4">
+                  <Button 
+                    variant="secondary" 
+                    className="font-bold rounded-xl"
+                    onClick={() => speak(selectedPassage.content, isSlowMode ? 0.6 : 0.9)}
+                    disabled={isPlaying}
+                  >
+                    <Volume2 className="w-4 h-4 mr-2" /> Listen to Model
+                  </Button>
+                  <Button 
+                    variant={isSlowMode ? "default" : "outline"} 
+                    className="font-bold rounded-xl"
+                    onClick={() => setIsSlowMode(!isSlowMode)}
+                  >
+                    <Turtle className="w-4 h-4 mr-2" /> Slow Mode
+                  </Button>
+               </div>
 
                <div className="pt-8 flex flex-col items-center gap-4">
                   {error && (
@@ -284,6 +340,13 @@ export default function ReadAloudPage() {
                     <Sparkles className="w-6 h-6 text-amber-500 absolute -top-2 -right-2 animate-bounce" />
                   </div>
                   <p className="font-bold text-lg text-slate-700 dark:text-slate-300">AI is analyzing your pronunciation...</p>
+                  
+                  {/* Skeleton for Feedback */}
+                  <div className="mt-8 space-y-4 max-w-md mx-auto opacity-50">
+                     <div className="h-4 bg-slate-200 dark:bg-slate-800 rounded animate-pulse w-3/4 mx-auto" />
+                     <div className="h-4 bg-slate-200 dark:bg-slate-800 rounded animate-pulse w-full mx-auto" />
+                     <div className="h-4 bg-slate-200 dark:bg-slate-800 rounded animate-pulse w-5/6 mx-auto" />
+                  </div>
                 </div>
               </motion.div>
             )}
@@ -312,22 +375,47 @@ export default function ReadAloudPage() {
                   </Card>
 
                   {/* AI Feedback Card */}
-                  <Card className="md:col-span-2 p-6 bg-indigo-50 dark:bg-indigo-950/20 border-indigo-100 dark:border-indigo-900/50">
-                    <div className="flex items-center gap-2 mb-3">
+                  <Card className="md:col-span-2 p-6 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-sm">
+                    <div className="flex items-center gap-2 mb-4 pb-4 border-b border-slate-100 dark:border-slate-800/50">
                        <Sparkles className="w-5 h-5 text-indigo-500" />
-                       <h3 className="font-bold text-indigo-900 dark:text-indigo-400">AI Coaching Feedback</h3>
+                       <h3 className="font-bold text-slate-900 dark:text-white">AI Coaching Feedback</h3>
                     </div>
-                    <p className="text-lg font-medium leading-relaxed italic text-indigo-950 dark:text-indigo-200">
-                      "{result.aiFeedback}"
-                    </p>
+                    
+                    <div className="space-y-4">
+                      {/* Good Component */}
+                      <div className="flex gap-3 items-start">
+                         <div className="mt-0.5"><CheckCircle className="w-5 h-5 text-emerald-500" /></div>
+                         <div>
+                            <p className="text-sm font-bold text-slate-900 dark:text-slate-200">What you did well</p>
+                            <p className="text-slate-600 dark:text-slate-400 leading-relaxed text-sm mt-1">{result.aiFeedback.good}</p>
+                         </div>
+                      </div>
+
+                      {/* Improvement Component */}
+                      <div className="flex gap-3 items-start">
+                         <div className="mt-0.5"><XCircle className="w-5 h-5 text-rose-500" /></div>
+                         <div>
+                            <p className="text-sm font-bold text-slate-900 dark:text-slate-200">Needs improvement</p>
+                            <p className="text-slate-600 dark:text-slate-400 leading-relaxed text-sm mt-1">{result.aiFeedback.improvement}</p>
+                         </div>
+                      </div>
+                    </div>
+
                     {result.mistakes.length > 0 && (
-                      <div className="mt-4 pt-4 border-t border-indigo-200/50">
-                         <p className="text-sm font-bold text-indigo-800 dark:text-indigo-500 mb-2">Focus Words:</p>
+                      <div className="mt-6 pt-4 border-t border-slate-100 dark:border-slate-800/50">
+                         <p className="text-sm font-bold text-slate-900 dark:text-slate-300 mb-3">Target Focus Words:</p>
+                         <p className="text-xs text-slate-500 dark:text-slate-500 mb-3 block">Tap a word to hear correct pronunciation</p>
                          <div className="flex flex-wrap gap-2">
                             {result.mistakes.slice(0, 5).map((m, i) => (
-                              <span key={i} className="px-2 py-1 rounded bg-white dark:bg-indigo-900/50 text-xs font-bold text-indigo-600 border border-indigo-100">
+                              <button 
+                                key={i}
+                                onClick={() => speak(m.expected, isSlowMode ? 0.6 : 0.85)}
+                                className="group flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-50 dark:bg-slate-800 hover:bg-indigo-50 dark:hover:bg-indigo-900/40 text-sm font-bold text-slate-700 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400 border border-slate-200 dark:border-slate-700 transition-all focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                                title="Tap to hear"
+                              >
                                 {m.expected}
-                              </span>
+                                <Volume2 className="w-3.5 h-3.5 text-slate-400 group-hover:text-indigo-500" />
+                              </button>
                             ))}
                          </div>
                       </div>
