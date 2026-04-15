@@ -1,4 +1,13 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import { WordCard } from "@/components/vocabulary/WordCard";
 import { getTodayRotatedWordsAsync, type VocabularyWord } from "@/lib/data/vocabularyData";
+import { Button } from "@/components/ui/button";
+import { ChevronLeft, ChevronRight, Trophy } from "lucide-react";
+import Link from "next/link";
+import { motion, AnimatePresence } from "framer-motion";
+import confetti from "canvas-confetti";
 import { createClient } from "@/lib/supabase/client";
 
 export default function DailyVocabulary() {

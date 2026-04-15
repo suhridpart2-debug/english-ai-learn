@@ -1,3 +1,7 @@
+import { MobileNav } from "@/components/layout/MobileNav";
+import { Mic, LayoutDashboard, BookOpen, MessageSquareText, Dumbbell, User, Clock } from "lucide-react";
+import { AuthGuard } from "@/components/layout/AuthGuard";
+import Link from "next/link";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
