@@ -224,14 +224,14 @@ export default function DashboardPage() {
 
       <div className="grid md:grid-cols-3 gap-8">
         <div className="md:col-span-2 space-y-8">
-          <Card className="overflow-hidden bg-slate-900 border-slate-800 text-white relative">
+          <Card className="overflow-hidden relative bg-indigo-950 text-white border-none">
             <div className="absolute top-0 right-0 w-64 h-64 bg-primary-500/30 rounded-full blur-[80px]" />
             <div className="p-6 md:p-8 relative z-10">
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 backdrop-blur-md text-slate-200 text-sm font-medium mb-6">
                 <AlertCircle className="w-4 h-4 text-emerald-400" />
                 Quick Action
               </div>
-              <h2 className="text-2xl md:text-3xl font-display font-bold mb-3">60-Second Challenge</h2>
+              <h2 className="text-2xl md:text-3xl font-display font-bold mb-3 text-white">60-Second Challenge</h2>
               <p className="text-slate-300 max-w-sm mb-8">Speak on a random topic for 60 seconds. Instant feedback on filler words & pauses.</p>
               
               <Link href="/practice/sixty-seconds">
@@ -295,7 +295,7 @@ export default function DashboardPage() {
             <div className="space-y-3">
               {recentActivity && (
                 <Link href={recentActivity.mode === 'Topic Practice' ? `/practice/topic` : recentActivity.persona ? `/practice/conversation` : `/practice/sixty-seconds`} className="block group">
-                   <div className="flex items-center gap-4 p-3 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 hover:border-primary-200 transition-all">
+                    <div className="flex items-center gap-4 p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 hover:border-primary-200 transition-all">
                       <div className="w-12 h-12 rounded-full bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center text-primary-600">
                          {recentActivity.persona ? <MessageSquareText className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
                       </div>

@@ -44,8 +44,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={cn(inter.variable, outfit.variable, "antialiased")}>
-      <body className="font-sans min-h-screen selection:bg-indigo-500/30">
+    <html lang="en" suppressHydrationWarning className={cn(inter.variable, outfit.variable, "antialiased")}>
+      <body className="font-sans antialiased selection:bg-indigo-500/30">
         <ThemeProvider>
           {children}
         </ThemeProvider>

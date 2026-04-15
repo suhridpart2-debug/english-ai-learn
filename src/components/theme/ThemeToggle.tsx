@@ -1,11 +1,25 @@
 "use client";
 
-import { useTheme } from "./ThemeContext";
+import { useTheme } from "next-themes";
 import { Sun, Moon } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useEffect, useState } from "react";
 
 export function ThemeToggle() {
-  const { theme, toggleTheme } = useTheme();
+  const { theme, setTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) return <div className="w-14 h-7" aria-hidden="true" />; // Placeholder to prevent layout shift
+
+  const isLight = theme === "light";
+
+  const toggleTheme = () => {
+    setTheme(isLight ? "dark" : "light");
+  };
 
   return (
     <button
@@ -24,13 +38,13 @@ export function ThemeToggle() {
 
       <motion.div
         animate={{
-          x: theme === "light" ? 0 : 28,
+          x: isLight ? 0 : 28,
         }}
         transition={{ type: "spring", stiffness: 500, damping: 30 }}
         className="absolute top-1 left-1 w-5 h-5 rounded-full bg-white dark:bg-slate-100 shadow-sm flex items-center justify-center"
       >
         <AnimatePresence mode="wait" initial={false}>
-          {theme === "light" ? (
+          {isLight ? (
             <motion.div
               key="sun"
               initial={{ scale: 0.5, rotate: -45, opacity: 0 }}

@@ -26,7 +26,7 @@ export function VideoCard({ video, isWatched, isSaved, progress }: VideoCardProp
             }}
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
           />
-          <div className="absolute inset-0 bg-black/20 group-hover:bg-black/10 transition-colors" />
+          <div className="absolute inset-0 bg-black/10 dark:bg-black/40 group-hover:bg-black/5 dark:group-hover:bg-black/20 transition-colors" />
           
           <div className="absolute top-2 right-2 flex gap-2">
             {isSaved && (
@@ -41,7 +41,7 @@ export function VideoCard({ video, isWatched, isSaved, progress }: VideoCardProp
             )}
           </div>
 
-          <div className="absolute bottom-2 right-2 bg-black/70 backdrop-blur-md text-white text-[10px] font-bold px-2 py-0.5 rounded">
+          <div className="absolute bottom-2 right-2 bg-slate-900/80 dark:bg-black/70 backdrop-blur-md text-white text-[10px] font-bold px-2 py-0.5 rounded">
             {Math.floor(video.duration / 60)}:{(video.duration % 60).toString().padStart(2, '0')}
           </div>
 

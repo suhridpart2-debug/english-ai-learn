@@ -7,7 +7,7 @@ import { ThemeToggle } from "@/components/theme/ThemeToggle";
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <AuthGuard>
-      <div className="min-h-screen bg-transparent pb-24 md:pb-0 md:pl-64">
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 transition-colors pb-24 md:pb-0 md:pl-64">
         {/* Desktop Sidebar (Hidden on mobile) */}
         <aside className="hidden md:flex w-64 h-screen fixed left-0 top-0 border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 flex-col">
           <div className="p-6 flex items-center justify-between">

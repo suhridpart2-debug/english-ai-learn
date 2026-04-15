@@ -57,7 +57,7 @@ export function WordCard({ word, isSaved = false, onSaveToggle, onMarkLearned, o
   };
 
   return (
-    <Card className="overflow-hidden border-2 border-slate-100 dark:border-slate-800 shadow-sm relative group bg-white dark:bg-slate-900">
+    <Card className="overflow-hidden border-2 border-slate-100 dark:border-slate-800 shadow-sm relative group">
       <div className="absolute top-4 right-4 flex gap-2">
         <button 
           onClick={handleSaveToggle}

@@ -5,7 +5,7 @@ import { ThemeToggle } from "@/components/theme/ThemeToggle";
 
 export default function LandingPage() {
   return (
-    <main className="flex-1 bg-white dark:bg-slate-950 overflow-hidden min-h-screen">
+    <main className="min-h-screen bg-slate-50 text-slate-900 transition-colors dark:bg-slate-950 dark:text-white">
       {/* Navbar */}
       <nav className="absolute top-0 w-full flex items-center justify-between p-6 z-50">
         <div className="flex items-center gap-2 font-display font-bold text-xl tracking-tight text-slate-900 dark:text-white">
@@ -21,14 +21,14 @@ export default function LandingPage() {
               <Button variant="ghost" className="font-semibold text-slate-700 dark:text-slate-300">Log in</Button>
             </Link>
             <Link href="/onboarding">
-              <Button className="rounded-full shadow-lg shadow-primary-500/20 px-6">Get Started</Button>
+              <Button className="rounded-full shadow-lg shadow-primary-500/20 px-6 bg-primary-600 text-white hover:bg-primary-700">Get Started</Button>
             </Link>
           </div>
         </div>
       </nav>
 
       {/* Hero Section */}
-      <section className="relative pt-32 pb-20 lg:pt-48 lg:pb-32 px-6 max-w-7xl mx-auto flex flex-col items-center text-center">
+      <section className="relative pt-32 pb-20 lg:pt-48 lg:pb-32 px-6 max-w-7xl mx-auto flex flex-col items-center text-center bg-transparent">
         {/* Abstract Background Blur */}
         <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -z-10 w-[600px] h-[600px] bg-primary-500/20 rounded-full blur-[120px] dark:bg-primary-600/20" />
         
@@ -49,26 +49,26 @@ export default function LandingPage() {
 
         <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
           <Link href="/onboarding" className="w-full sm:w-auto">
-            <Button size="lg" className="w-full rounded-full text-lg shadow-xl shadow-primary-600/20">
+            <Button size="lg" className="w-full rounded-full text-lg shadow-xl shadow-primary-600/20 bg-primary-600 text-white hover:bg-primary-700">
               Start Practicing Free
-              <ArrowRight className="w-5 h-5 ml-2" />
+              <ArrowRight className="w-5 h-5 ml-2 text-white" />
             </Button>
           </Link>
           <Link href="#features" className="w-full sm:w-auto">
-            <Button size="lg" variant="outline" className="w-full rounded-full text-lg bg-white/50 backdrop-blur-sm dark:bg-slate-950/50 hover:bg-slate-50 dark:hover:bg-slate-900 border-slate-200 dark:border-slate-800">
+            <Button size="lg" variant="outline" className="w-full rounded-full text-lg bg-white/50 backdrop-blur-sm dark:bg-slate-900/40 hover:bg-white dark:hover:bg-slate-800 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white">
               See How It Works
             </Button>
           </Link>
         </div>
 
         {/* Mock App UI Preview */}
-        <div className="mt-20 w-full max-w-4xl rounded-2xl glass-card overflow-hidden border-t border-x border-white/40 dark:border-slate-700/50 shadow-2xl relative shadow-primary-900/5">
-          <div className="h-12 border-b border-slate-200 dark:border-slate-800 flex items-center px-4 gap-2 bg-slate-50/50 dark:bg-slate-900/50">
+        <div className="mt-20 w-full max-w-4xl rounded-2xl bg-white dark:bg-slate-900 overflow-hidden border border-slate-200 dark:border-slate-800 shadow-2xl relative shadow-slate-200 dark:shadow-primary-900/5 transition-colors">
+          <div className="h-12 border-b border-slate-200 dark:border-slate-800 flex items-center px-4 gap-2 bg-slate-50/50 dark:bg-slate-950/50">
             <div className="w-3 h-3 rounded-full bg-red-400" />
             <div className="w-3 h-3 rounded-full bg-amber-400" />
             <div className="w-3 h-3 rounded-full bg-green-400" />
           </div>
-          <div className="aspect-[16/9] bg-slate-100 dark:bg-slate-900 p-8 flex items-center justify-center relative overflow-hidden">
+          <div className="aspect-[16/9] bg-slate-50 dark:bg-slate-950 p-8 flex items-center justify-center relative overflow-hidden">
             {/* Fake Waveform */}
             <div className="flex items-center justify-center gap-1">
               {[40, 60, 30, 80, 50, 90, 70, 40, 100, 60, 40, 20].map((h, i) => (
@@ -80,7 +80,7 @@ export default function LandingPage() {
       </section>
 
       {/* Features Grid */}
-      <section id="features" className="py-24 bg-slate-50 dark:bg-slate-950 px-6">
+      <section id="features" className="py-24 bg-white/70 dark:bg-slate-900/40 transition-colors px-6">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-3xl lg:text-5xl font-display font-bold text-slate-900 dark:text-white mb-4">

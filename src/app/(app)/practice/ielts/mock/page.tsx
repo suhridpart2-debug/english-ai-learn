@@ -145,7 +145,7 @@ export default function IELTSMockRoom() {
         </div>
       </header>
 
-      <Card className="p-8 bg-slate-900 border-slate-800 text-white relative overflow-hidden">
+      <Card className="p-8 relative overflow-hidden border-2 border-indigo-100 dark:border-indigo-900/40 bg-indigo-950 text-white">
         <div className="absolute top-0 right-0 w-32 h-32 bg-primary-500/10 rounded-full blur-3xl" />
         <p className="text-xs font-bold text-primary-400 uppercase tracking-widest mb-4">Cue Card Topic</p>
         <h2 className="text-2xl md:text-3xl font-display font-bold leading-tight relative z-10">
@@ -250,7 +250,7 @@ export default function IELTSMockRoom() {
                  <RefreshCw className="w-4 h-4 mr-2" /> Retake Test
               </Button>
               <Link href="/practice">
-                 <Button className="rounded-full bg-slate-900 hover:bg-slate-800 text-white">Back to Practice</Button>
+                 <Button className="rounded-full bg-slate-900 dark:bg-slate-800 hover:bg-slate-800 dark:hover:bg-slate-700 text-white">Back to Practice</Button>
               </Link>
            </div>
         </motion.div>

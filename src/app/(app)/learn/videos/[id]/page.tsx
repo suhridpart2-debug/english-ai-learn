@@ -110,7 +110,7 @@ export default function VideoPlayerPage() {
         {/* Video Player Section */}
         <div className="aspect-video bg-black rounded-2xl overflow-hidden shadow-2xl relative">
           {isReplacing ? (
-            <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-900 text-white z-20">
+            <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-100 dark:bg-slate-900 text-slate-900 dark:text-white z-20">
               <Sparkles className="w-10 h-10 mb-4 text-primary-400 animate-pulse" />
               <p className="text-lg font-bold">Refreshing video content...</p>
               <p className="text-sm text-slate-400 mt-2">Connecting you to another lesson.</p>
