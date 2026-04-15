@@ -1,70 +1,29 @@
 "use client";
 
-import { useTheme } from "next-themes";
-import { Sun, Moon } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
 import { useEffect, useState } from "react";
+import { Moon, Sun } from "lucide-react";
+import { useTheme } from "next-themes";
 
 export function ThemeToggle() {
-  const { theme, setTheme } = useTheme();
+  const { resolvedTheme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  if (!mounted) return <div className="w-14 h-7" aria-hidden="true" />; // Placeholder to prevent layout shift
+  if (!mounted) return null;
 
-  const isLight = theme === "light";
-
-  const toggleTheme = () => {
-    setTheme(isLight ? "dark" : "light");
-  };
+  const isDark = resolvedTheme === "dark";
 
   return (
     <button
-      onClick={toggleTheme}
-      className="relative w-14 h-7 rounded-full bg-slate-200 dark:bg-slate-800 p-1 transition-colors group"
-      aria-label="Toggle Theme"
+      type="button"
+      onClick={() => setTheme(isDark ? "light" : "dark")}
+      aria-label="Toggle theme"
+      className="inline-flex items-center rounded-full border border-slate-200 bg-white p-2 text-slate-700 shadow-sm transition hover:bg-slate-100 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
     >
-      <motion.div
-        className="absolute inset-0 bg-primary-500/10 dark:bg-primary-500/20 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-      />
-      
-      <div className="relative w-full h-full flex items-center justify-between px-1">
-        <Sun className="w-4 h-4 text-amber-500 z-10" />
-        <Moon className="w-4 h-4 text-indigo-400 z-10" />
-      </div>
-
-      <motion.div
-        animate={{
-          x: isLight ? 0 : 28,
-        }}
-        transition={{ type: "spring", stiffness: 500, damping: 30 }}
-        className="absolute top-1 left-1 w-5 h-5 rounded-full bg-white dark:bg-slate-100 shadow-sm flex items-center justify-center"
-      >
-        <AnimatePresence mode="wait" initial={false}>
-          {isLight ? (
-            <motion.div
-              key="sun"
-              initial={{ scale: 0.5, rotate: -45, opacity: 0 }}
-              animate={{ scale: 1, rotate: 0, opacity: 1 }}
-              exit={{ scale: 0.5, rotate: 45, opacity: 0 }}
-            >
-              <Sun className="w-3 h-3 text-amber-500" />
-            </motion.div>
-          ) : (
-            <motion.div
-              key="moon"
-              initial={{ scale: 0.5, rotate: 45, opacity: 0 }}
-              animate={{ scale: 1, rotate: 0, opacity: 1 }}
-              exit={{ scale: 0.5, rotate: -45, opacity: 0 }}
-            >
-              <Moon className="w-3 h-3 text-indigo-500" />
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </motion.div>
+      {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
     </button>
   );
 }

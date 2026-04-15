@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Inter, Outfit } from "next/font/google";
 import "./globals.css";
 import { cn } from "@/lib/utils";
+import { ThemeProvider } from "@/components/theme/ThemeContext";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -14,7 +15,9 @@ const outfit = Outfit({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://english-ai-learn.vercel.app"),
+  metadataBase: new URL(
+    process.env.NEXT_PUBLIC_SITE_URL || "https://english-ai-learn.vercel.app"
+  ),
   title: "SpeakAI - AI English Coach",
   description: "Master spoken English with your personal AI Coach.",
   manifest: "/manifest.json",
@@ -36,19 +39,19 @@ export const viewport: Viewport = {
   maximumScale: 1,
 };
 
-import { ThemeProvider } from "@/components/theme/ThemeContext";
-
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning className={cn(inter.variable, outfit.variable, "antialiased")}>
-      <body className="font-sans antialiased selection:bg-indigo-500/30">
-        <ThemeProvider>
-          {children}
-        </ThemeProvider>
+    <html
+      lang="en"
+      suppressHydrationWarning
+      className={cn(inter.variable, outfit.variable, "antialiased")}
+    >
+      <body className="min-h-screen bg-slate-50 font-sans text-slate-900 antialiased transition-colors selection:bg-indigo-500/30 dark:bg-slate-950 dark:text-white">
+        <ThemeProvider>{children}</ThemeProvider>
       </body>
     </html>
   );

@@ -15,6 +15,7 @@ function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirectParams = searchParams.get("redirect") || "/dashboard";
+  const errorParam = searchParams.get("error");
   const supabase = createClient();
 
   const [checkingSession, setCheckingSession] = useState(true);
@@ -26,16 +27,12 @@ function LoginContent() {
   useEffect(() => {
     const checkSession = async () => {
       try {
-        console.log("LoginPage: Checking for active session...");
         const { data, error } = await supabase.auth.getSession();
 
         if (!error && data.session) {
-          console.log("LoginPage: Active session found for", data.session.user.email, "- Redirecting to", redirectParams);
           router.replace(redirectParams);
           return;
         }
-        
-        console.log("LoginPage: No active session found, showing login form.");
       } catch (err) {
         console.error("LoginPage: Session check error:", err);
       } finally {
@@ -67,7 +64,7 @@ function LoginContent() {
         return;
       }
 
-      router.push(redirectParams);
+      router.replace(redirectParams);
     } catch (err) {
       console.error("Login error:", err);
       alert("Something went wrong while logging in.");
@@ -81,40 +78,38 @@ function LoginContent() {
     setIsLoading(true);
 
     try {
-      // Use window.location.origin for simple redirection
       const origin = window.location.origin;
-      const callbackUrl = `${origin}/auth/callback`;
-      
-      console.log("LoginPage: Redirecting to Google OAuth...");
+      const callbackUrl = `${origin}/auth/callback?next=${encodeURIComponent(
+        redirectParams
+      )}`;
 
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
-          redirectTo: `${callbackUrl}?next=${encodeURIComponent(redirectParams)}`,
+          redirectTo: callbackUrl,
           queryParams: {
-            access_type: 'offline',
-            prompt: 'select_account',
+            access_type: "offline",
+            prompt: "select_account",
           },
         },
       });
 
       if (error) {
-        setIsLoading(false);
+        console.error("Google login error:", error.message);
         alert(error.message);
+        setIsLoading(false);
       }
-      // Note: If no error, the browser will redirect away, 
-      // so we don't necessarily need to set isLoading(false) unless it fails or stays on page.
     } catch (err) {
       console.error("Google login error:", err);
-      setIsLoading(false);
       alert("Something went wrong with Google sign in.");
+      setIsLoading(false);
     }
   };
 
   if (checkingSession) {
     return (
-      <div className="w-full max-w-md z-10 flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-primary-500" />
+      <div className="z-10 flex w-full max-w-md items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary-500" />
       </div>
     );
   }
@@ -123,25 +118,37 @@ function LoginContent() {
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
+      className="relative w-full max-w-md"
     >
-      <div className="absolute top-6 right-6 z-20">
+      <div className="absolute right-0 top-0 z-20 -translate-y-16">
         <ThemeToggle />
       </div>
 
-      <div className="text-center mb-8">
-        <div className="inline-flex bg-primary-600 p-2 rounded-xl text-white shadow-lg shadow-primary-500/30 mb-4">
-          <Mic className="w-6 h-6" />
+      <div className="mb-8 text-center">
+        <div className="mb-4 inline-flex rounded-xl bg-primary-600 p-2 text-white shadow-lg shadow-primary-500/30">
+          <Mic className="h-6 w-6" />
         </div>
-        <h1 className="text-3xl font-display font-bold text-slate-900 dark:text-white mb-2">
+        <h1 className="mb-2 font-display text-3xl font-bold text-slate-900 dark:text-white">
           Welcome Back
         </h1>
-        <p className="text-slate-500 dark:text-slate-400">Log in to continue your speaking practice.</p>
+        <p className="text-slate-500 dark:text-slate-400">
+          Log in to continue your speaking practice.
+        </p>
       </div>
 
-      <Card glass className="p-8 bg-white/80 dark:bg-slate-900/80 border-slate-200 dark:border-slate-800 backdrop-blur-xl shadow-2xl">
+      {errorParam && (
+        <div className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900/40 dark:bg-red-950/30 dark:text-red-300">
+          Login failed. Please try again.
+        </div>
+      )}
+
+      <Card
+        glass
+        className="border-slate-200 bg-white/80 p-8 shadow-2xl backdrop-blur-xl dark:border-slate-800 dark:bg-slate-900/80"
+      >
         <form onSubmit={handleEmailLogin} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+            <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
               Email
             </label>
             <Input
@@ -155,7 +162,7 @@ function LoginContent() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+            <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
               Password
             </label>
             <Input
@@ -168,31 +175,38 @@ function LoginContent() {
             />
           </div>
 
-          <Button type="submit" className="w-full h-12 text-md mt-2" disabled={isLoading}>
-            {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : "Sign In with Email"}
+          <Button type="submit" className="mt-2 h-12 w-full text-md" disabled={isLoading}>
+            {isLoading ? (
+              <Loader2 className="h-5 w-5 animate-spin" />
+            ) : (
+              "Sign In with Email"
+            )}
           </Button>
         </form>
 
         <div className="my-6 flex items-center">
-          <div className="border-t border-slate-200 dark:border-slate-800 flex-1" />
+          <div className="flex-1 border-t border-slate-200 dark:border-slate-800" />
           <span className="px-3 text-sm text-slate-400">OR</span>
-          <div className="border-t border-slate-200 dark:border-slate-800 flex-1" />
+          <div className="flex-1 border-t border-slate-200 dark:border-slate-800" />
         </div>
 
         <Button
           variant="outline"
           type="button"
-          className="w-full h-12 bg-white dark:bg-slate-900"
+          className="h-12 w-full bg-white dark:bg-slate-900"
           onClick={handleGoogleLogin}
           disabled={isLoading}
         >
-          <Globe className="w-5 h-5 mr-2" />
+          <Globe className="mr-2 h-5 w-5" />
           Continue with Google
         </Button>
 
-        <p className="text-center text-sm text-slate-500 mt-6">
+        <p className="mt-6 text-center text-sm text-slate-500 dark:text-slate-400">
           Don&apos;t have an account?{" "}
-          <Link href="/onboarding" className="text-primary-600 font-medium hover:underline">
+          <Link
+            href="/onboarding"
+            className="font-medium text-primary-600 hover:underline"
+          >
             Sign up
           </Link>
         </p>
@@ -203,11 +217,13 @@ function LoginContent() {
 
 export default function LoginPage() {
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-slate-50 dark:bg-slate-950 relative overflow-hidden">
-      <div className="absolute -top-40 -right-40 w-96 h-96 bg-primary-500/20 rounded-full blur-[100px]" />
-      <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-indigo-500/20 rounded-full blur-[100px]" />
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-slate-50 p-4 dark:bg-slate-950">
+      <div className="absolute -right-40 -top-40 h-96 w-96 rounded-full bg-primary-500/20 blur-[100px]" />
+      <div className="absolute -bottom-40 -left-40 h-96 w-96 rounded-full bg-indigo-500/20 blur-[100px]" />
 
-      <Suspense fallback={<Loader2 className="w-8 h-8 animate-spin text-primary-500" />}>
+      <Suspense
+        fallback={<Loader2 className="h-8 w-8 animate-spin text-primary-500" />}
+      >
         <LoginContent />
       </Suspense>
     </div>
