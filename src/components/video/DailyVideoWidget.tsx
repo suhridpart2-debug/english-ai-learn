@@ -15,17 +15,31 @@ export function DailyVideoWidget() {
   const [timeLeft, setTimeLeft] = useState("");
 
   useEffect(() => {
-    // Initial Load
-    const daily = VideoService.getDailyVideos();
-    setVideos(daily);
+    async function init() {
+      // 1. Fetch Rotated Videos
+      const daily = await VideoService.getDailyVideosAsync();
+      setVideos(daily);
 
-    // Load Progress
-    VideoService.getUserProgress(daily.map(v => v.id)).then(setProgress);
+      // 2. Load Progress
+      if (daily.length > 0) {
+        VideoService.getUserProgress(daily.map(v => v.id)).then(setProgress);
+      }
+    }
+
+    init();
 
     // Refresh Timer
     const timer = setInterval(() => {
-      const next = VideoService.getNextRefreshTime();
-      const diff = next.getTime() - new Date().getTime();
+      const now = new Date();
+      // Calculate next 4-hour slot (0, 4, 8, 12, 16, 20)
+      const currentHour = now.getHours();
+      const nextRefreshHour = Math.ceil((currentHour + 0.1) / 4) * 4;
+      
+      const next = new Date(now);
+      next.setHours(nextRefreshHour % 24, 0, 0, 0);
+      if (nextRefreshHour >= 24) next.setDate(now.getDate() + 1);
+
+      const diff = next.getTime() - now.getTime();
       
       const hours = Math.floor(diff / (1000 * 60 * 60));
       const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
@@ -34,10 +48,8 @@ export function DailyVideoWidget() {
       setTimeLeft(`${hours}h ${mins}m ${secs}s`);
       
       // Auto-refresh if timer hits zero
-      if (diff <= 0) {
-        const refreshed = VideoService.getDailyVideos();
-        setVideos(refreshed);
-        VideoService.getUserProgress(refreshed.map(v => v.id)).then(setProgress);
+      if (diff <= 1000) {
+        init();
       }
     }, 1000);
 

@@ -3,7 +3,14 @@ import { Card } from "@/components/ui/card";
 import { Mic, Timer, GraduationCap, Users, BookOpen } from "lucide-react";
 
 export default function PracticeHubPage() {
-  const modes = [
+    {
+      id: "read-aloud",
+      title: "Pronunciation Coach",
+      desc: "Read passages aloud and get word-level accuracy feedback.",
+      icon: Mic,
+      color: "bg-indigo-100 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400",
+      link: "/practice/read-aloud"
+    },
     {
       id: "conversation-buddy",
       title: "AI Conversation Buddy",

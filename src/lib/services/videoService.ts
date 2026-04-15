@@ -36,31 +36,48 @@ export class VideoService {
   }
 
   /**
-   * Returns 3 videos for the current 6-hour window.
-   * Uses a deterministic selection based on date and window index.
+   * Returns 3 videos for the current 4-hour cycle.
+   * Now fetches from Supabase rotated_video_sets.
+   */
+  static async getDailyVideosAsync(): Promise<VideoLearningObject[]> {
+    try {
+      // 1. Get current cycle
+      const { data: cycle } = await supabase
+        .from('content_refresh_cycles')
+        .select('cycle_index')
+        .order('last_refresh_at', { ascending: false })
+        .limit(1)
+        .single();
+      
+      if (!cycle) return DAILY_VIDEOS.slice(0, 3); // Fallback
+
+      // 2. Get rotated ids
+      const { data: rotated } = await supabase
+        .from('rotated_video_sets')
+        .select('video_ids')
+        .eq('cycle_index', cycle.cycle_index)
+        .single();
+
+      if (!rotated || !rotated.video_ids) return DAILY_VIDEOS.slice(0, 3);
+
+      // 3. Map IDs back to objects from the pool
+      const selected = rotated.video_ids
+        .map((id: string) => DAILY_VIDEOS.find(v => v.id === id))
+        .filter(Boolean) as VideoLearningObject[];
+
+      return selected.length > 0 ? selected : DAILY_VIDEOS.slice(0, 3);
+    } catch (err) {
+      console.error("VideoService: Error fetching rotated videos", err);
+      return DAILY_VIDEOS.slice(0, 3);
+    }
+  }
+
+  /**
+   * Old synchronous method kept for backward compatibility if needed, 
+   * but should be moved to getDailyVideosAsync.
    */
   static getDailyVideos(): VideoLearningObject[] {
-    const now = new Date();
-    const dateStr = now.toISOString().split('T')[0];
-    const windowIdx = this.getCurrentWindowIndex();
-    
-    // Simple deterministic seed: "2024-05-20-1" -> hash -> index
-    const seed = `${dateStr}-${windowIdx}`;
-    let hash = 0;
-    for (let i = 0; i < seed.length; i++) {
-      hash = (hash << 5) - hash + seed.charCodeAt(i);
-      hash |= 0;
-    }
-    
-    const startIdx = Math.abs(hash) % DAILY_VIDEOS.length;
-    
-    // Pick 3 videos (looping if necessary)
-    const selected: VideoLearningObject[] = [];
-    for (let i = 0; i < 3; i++) {
-        selected.push(DAILY_VIDEOS[(startIdx + i) % DAILY_VIDEOS.length]);
-    }
-    
-    return selected;
+    return DAILY_VIDEOS.slice(0, 3);
   }
 
   /**

@@ -1,20 +1,20 @@
-import { MobileNav } from "@/components/layout/MobileNav";
-import { Mic, LayoutDashboard, BookOpen, MessageSquareText, Dumbbell, User, Clock } from "lucide-react";
-import { AuthGuard } from "@/components/layout/AuthGuard";
-import Link from "next/link";
+import { ThemeToggle } from "@/components/theme/ThemeToggle";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <AuthGuard>
-      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 pb-24 md:pb-0 md:pl-64">
+      <div className="min-h-screen bg-transparent pb-24 md:pb-0 md:pl-64">
         {/* Desktop Sidebar (Hidden on mobile) */}
         <aside className="hidden md:flex w-64 h-screen fixed left-0 top-0 border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 flex-col">
-          <Link href="/dashboard" className="p-6 flex items-center gap-2 font-display font-bold text-xl hover:opacity-80 transition-opacity">
-            <div className="bg-primary-600 text-white p-1.5 rounded-lg">
-              <Mic className="w-5 h-5" />
-            </div>
-            SpeakAI
-          </Link>
+          <div className="p-6 flex items-center justify-between">
+            <Link href="/dashboard" className="flex items-center gap-2 font-display font-bold text-xl hover:opacity-80 transition-opacity">
+              <div className="bg-primary-600 text-white p-1.5 rounded-lg">
+                <Mic className="w-5 h-5" />
+              </div>
+              SpeakAI
+            </Link>
+            <ThemeToggle />
+          </div>
           <nav className="flex-1 p-4 space-y-1">
             {[
               { href: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },

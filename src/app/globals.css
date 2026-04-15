@@ -20,36 +20,35 @@
   :root {
     --background: #f8fafc;
     --foreground: #020617;
+    --card-bg: #ffffff;
+    --card-border: #e2e8f0;
+    --muted: #64748b;
   }
   
-  @media (prefers-color-scheme: dark) {
-    :root {
-      --background: #020617;
-      --foreground: #f8fafc;
-    }
+  .dark {
+    --background: #020617;
+    --foreground: #f8fafc;
+    --card-bg: #0f172a;
+    --card-border: #1e293b;
+    --muted: #94a3b8;
   }
 }
 
 body {
   background-color: var(--background);
   color: var(--foreground);
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 @layer utilities {
   .glass {
-    background-color: rgb(255 255 255 / 0.7);
+    background-color: var(--card-bg);
+    opacity: 0.95;
     backdrop-filter: blur(12px);
-    border: 1px solid rgb(255 255 255 / 0.2);
-    box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+    border: 1px solid var(--card-border);
+    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
   }
   
-  @media (prefers-color-scheme: dark) {
-    .glass {
-      background-color: rgb(15 23 42 / 0.7);
-      border-color: rgb(30 41 59 / 0.5);
-    }
-  }
-
   .text-gradient {
     background-clip: text;
     -webkit-background-clip: text;
@@ -58,9 +57,7 @@ body {
     background-image: linear-gradient(to right, var(--color-primary-500), var(--color-primary-700));
   }
   
-  @media (prefers-color-scheme: dark) {
-    .text-gradient {
-      background-image: linear-gradient(to right, var(--color-primary-400), var(--color-primary-500));
-    }
+  .dark .text-gradient {
+    background-image: linear-gradient(to right, var(--color-primary-400), var(--color-primary-500));
   }
 }

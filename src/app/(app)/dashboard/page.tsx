@@ -8,6 +8,7 @@ import Link from "next/link";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { supabase } from "@/lib/supabaseClient";
 import { DailyVideoWidget } from "@/components/video/DailyVideoWidget";
+import { triggerRefreshIfNeeded } from "@/lib/services/refreshContent";
 
 interface StatData {
   current_streak: number;
@@ -40,6 +41,9 @@ export default function DashboardPage() {
 
   useEffect(() => {
     async function loadDashboardData() {
+      // Trigger lazy content refresh
+      await triggerRefreshIfNeeded();
+
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
       

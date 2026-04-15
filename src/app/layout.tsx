@@ -36,6 +36,8 @@ export const viewport: Viewport = {
   maximumScale: 1,
 };
 
+import { ThemeProvider } from "@/components/theme/ThemeContext";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -43,8 +45,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={cn(inter.variable, outfit.variable, "antialiased")}>
-      <body className="font-sans min-h-screen bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-50 selection:bg-indigo-500/30">
-        {children}
+      <body className="font-sans min-h-screen selection:bg-indigo-500/30">
+        <ThemeProvider>
+          {children}
+        </ThemeProvider>
       </body>
     </html>
   );

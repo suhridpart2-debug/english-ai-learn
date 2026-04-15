@@ -1,22 +1,18 @@
-"use client";
-
-import { useState, useEffect } from "react";
-import { WordCard } from "@/components/vocabulary/WordCard";
-import { getDailyWords, type VocabularyWord } from "@/lib/data/vocabularyData";
-import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight, Trophy } from "lucide-react";
-import Link from "next/link";
-import { motion, AnimatePresence } from "framer-motion";
-import confetti from "canvas-confetti";
+import { getTodayRotatedWordsAsync, type VocabularyWord } from "@/lib/data/vocabularyData";
+import { createClient } from "@/lib/supabase/client";
 
 export default function DailyVocabulary() {
   const [words, setWords] = useState<VocabularyWord[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isFinished, setIsFinished] = useState(false);
+  const supabase = createClient();
 
   useEffect(() => {
-    // Load daily words on mount
-    setWords(getDailyWords());
+    async function loadWords() {
+      const daily = await getTodayRotatedWordsAsync(supabase);
+      setWords(daily);
+    }
+    loadWords();
   }, []);
 
   const handleNext = () => {

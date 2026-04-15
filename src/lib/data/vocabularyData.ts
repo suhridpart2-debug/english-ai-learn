@@ -83,7 +83,7 @@ export const VOCABULARY_DATA: VocabularyWord[] = [
   { id: "v_74", word: "Narrative", meaning: "A spoken or written account of events; a story.", simpleExplanation: "The story or storyline that connects your ideas.", hinglishExplanation: "Woh kahani jo tumhare ideas ko ek dore mein piroti hai.", example: "Build a strong narrative so the audience stays engaged.", pronunciation: "NAR-uh-tiv", synonyms: ["Story", "Account", "Thread"], antonyms: ["Facts alone", "Data-dump"], difficulty: "Intermediate", topic: "presentation" },
 ];
 
-// Helper to get 5 daily words deterministically based on date
+// Helper to get 5 daily words deterministically based on date (LEGACY)
 export const getDailyWords = (seed: number = 0): VocabularyWord[] => {
   const today = new Date();
   const indexKey = today.getDate() + today.getMonth() + seed;
@@ -95,6 +95,35 @@ export const getDailyWords = (seed: number = 0): VocabularyWord[] => {
     daily.push(copy[idx]);
   }
   return daily;
+};
+
+// NEW: Fetch rotated words from Supabase for the 4-hour cycle
+export const getTodayRotatedWordsAsync = async (supabase: any): Promise<VocabularyWord[]> => {
+  try {
+    const { data: cycle } = await supabase
+      .from('content_refresh_cycles')
+      .select('cycle_index')
+      .order('last_refresh_at', { ascending: false })
+      .limit(1)
+      .single();
+
+    if (!cycle) return getDailyWords();
+
+    const { data: rotated } = await supabase
+      .from('rotated_vocabulary_sets')
+      .select('word_ids')
+      .eq('cycle_index', cycle.cycle_index)
+      .single();
+
+    if (!rotated || !rotated.word_ids) return getDailyWords();
+
+    return rotated.word_ids
+      .map((id: string) => VOCABULARY_DATA.find(w => w.id === id))
+      .filter(Boolean) as VocabularyWord[];
+  } catch (err) {
+    console.error("VocabData: Error fetching rotated words", err);
+    return getDailyWords();
+  }
 };
 
 // Get all words filtered by difficulty and/or topic

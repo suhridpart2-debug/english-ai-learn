@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Mic, Globe, Loader2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { ThemeToggle } from "@/components/theme/ThemeToggle";
 
 function LoginContent() {
   const router = useRouter();
@@ -76,18 +77,15 @@ function LoginContent() {
   };
 
   const handleGoogleLogin = async () => {
+    if (isLoading) return;
     setIsLoading(true);
 
     try {
-      // Use window.location.origin to detect if we are on localhost or production
-      const isProduction = !window.location.hostname.includes('localhost');
-      const origin = isProduction 
-        ? 'https://english-ai-learn.vercel.app' 
-        : window.location.origin;
-        
+      // Use window.location.origin for simple redirection
+      const origin = window.location.origin;
       const callbackUrl = `${origin}/auth/callback`;
       
-      console.log("LoginPage: Redirecting to Google OAuth with callback:", callbackUrl);
+      console.log("LoginPage: Redirecting to Google OAuth...");
 
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
@@ -95,19 +93,21 @@ function LoginContent() {
           redirectTo: `${callbackUrl}?next=${encodeURIComponent(redirectParams)}`,
           queryParams: {
             access_type: 'offline',
-            prompt: 'consent',
+            prompt: 'select_account',
           },
         },
       });
 
       if (error) {
+        setIsLoading(false);
         alert(error.message);
       }
+      // Note: If no error, the browser will redirect away, 
+      // so we don't necessarily need to set isLoading(false) unless it fails or stays on page.
     } catch (err) {
       console.error("Google login error:", err);
-      alert("Something went wrong with Google sign in.");
-    } finally {
       setIsLoading(false);
+      alert("Something went wrong with Google sign in.");
     }
   };
 
@@ -123,8 +123,10 @@ function LoginContent() {
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="w-full max-w-md z-10"
-    >
+      <div className="absolute top-6 right-6 z-20">
+        <ThemeToggle />
+      </div>
+
       <div className="text-center mb-8">
         <div className="inline-flex bg-primary-600 p-2 rounded-xl text-white shadow-lg shadow-primary-500/30 mb-4">
           <Mic className="w-6 h-6" />
