@@ -2,10 +2,10 @@ import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
 export async function updateSession(request: NextRequest) {
-  if (request.nextUrl.pathname.startsWith('/api/cron')) {
-    return NextResponse.next({
-      request,
-    });
+  // Safety gate: skip auth logic if somehow middleware is triggered for API or Auth routes
+  if (request.nextUrl.pathname.startsWith('/api/') || 
+      request.nextUrl.pathname.startsWith('/auth/')) {
+    return NextResponse.next({ request });
   }
 
   let supabaseResponse = NextResponse.next({

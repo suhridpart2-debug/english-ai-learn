@@ -1,8 +1,16 @@
 import { NextResponse } from 'next/server';
 import { AIService } from '@/lib/services/aiService';
+import { createClient } from '@/lib/supabase/server';
 
 export async function POST(request: Request) {
   try {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized access" }, { status: 401 });
+    }
+
     const formData = await request.formData();
     const audioBlob = formData.get('audio') as Blob;
     const targetWord = formData.get('word') as string;

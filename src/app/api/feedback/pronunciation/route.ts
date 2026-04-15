@@ -1,12 +1,20 @@
 import { NextResponse } from 'next/server';
+import { createClient } from '@/lib/supabase/server';
 
 const STATIC_FALLBACKS = [
   { good: "Bohot badhiya koshish thi!", improvement: "Bas kuch words par thoda aur dhyan dein." },
-  { good: "Aapki fluency kaafi acchi hai.", improvement: "Pronunciation par thoda focus karein." }
+  { good: "Aapki fluency kaafi acchi hai.", improvement: "Pronunciation पर थोड़ा फोकस करें।" }
 ];
 
 export async function POST(req: Request) {
   try {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized access" }, { status: 401 });
+    }
+
     const { passage, transcript, mistakes } = await req.json();
     const apiKey = process.env.GROQ_API_KEY;
 
