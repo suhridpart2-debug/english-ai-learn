@@ -78,18 +78,18 @@ function LoginContent() {
     setIsLoading(true);
 
     try {
-      const origin = window.location.origin;
-      const callbackUrl = `${origin}/auth/callback?next=${encodeURIComponent(
-        redirectParams
-      )}`;
+      const redirectUrl =
+        process.env.NODE_ENV === "development" || typeof window === "undefined" || !window.location.host.includes("vercel.app")
+          ? "http://localhost:3000/auth/callback"
+          : "https://english-ai-learn.vercel.app/auth/callback";
 
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
-          redirectTo: callbackUrl,
+          redirectTo: redirectUrl,
           queryParams: {
             access_type: "offline",
-            prompt: "select_account",
+            prompt: "consent",
           },
         },
       });
