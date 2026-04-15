@@ -1,11 +1,12 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Mic, ArrowRight, Sparkles, Brain, Target, Star } from "lucide-react";
+import { ThemeToggle } from "@/components/theme/ThemeToggle";
 
 export default function LandingPage() {
   return (
-    <main className="flex-1 bg-white dark:bg-slate-950 overflow-hidden">
-      {/* Navbar Placeholder */}
+    <main className="flex-1 bg-white dark:bg-slate-950 overflow-hidden min-h-screen">
+      {/* Navbar */}
       <nav className="absolute top-0 w-full flex items-center justify-between p-6 z-50">
         <div className="flex items-center gap-2 font-display font-bold text-xl tracking-tight text-slate-900 dark:text-white">
           <div className="bg-primary-600 text-white p-1.5 rounded-lg">
@@ -13,13 +14,16 @@ export default function LandingPage() {
           </div>
           SpeakAI
         </div>
-        <div className="flex gap-4">
-          <Link href="/auth/login">
-            <Button variant="ghost" className="font-semibold">Log in</Button>
-          </Link>
-          <Link href="/onboarding">
-            <Button className="rounded-full shadow-lg shadow-primary-500/20">Get Started</Button>
-          </Link>
+        <div className="flex items-center gap-4">
+          <ThemeToggle />
+          <div className="hidden sm:flex gap-4">
+            <Link href="/auth/login">
+              <Button variant="ghost" className="font-semibold text-slate-700 dark:text-slate-300">Log in</Button>
+            </Link>
+            <Link href="/onboarding">
+              <Button className="rounded-full shadow-lg shadow-primary-500/20 px-6">Get Started</Button>
+            </Link>
+          </div>
         </div>
       </nav>
 

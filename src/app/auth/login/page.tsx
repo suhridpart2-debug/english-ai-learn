@@ -135,10 +135,10 @@ function LoginContent() {
         <h1 className="text-3xl font-display font-bold text-slate-900 dark:text-white mb-2">
           Welcome Back
         </h1>
-        <p className="text-slate-500">Log in to continue your speaking practice.</p>
+        <p className="text-slate-500 dark:text-slate-400">Log in to continue your speaking practice.</p>
       </div>
 
-      <Card glass className="p-8">
+      <Card glass className="p-8 bg-white/80 dark:bg-slate-900/80 border-slate-200 dark:border-slate-800 backdrop-blur-xl shadow-2xl">
         <form onSubmit={handleEmailLogin} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">

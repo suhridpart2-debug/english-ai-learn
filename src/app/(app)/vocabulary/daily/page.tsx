@@ -64,11 +64,11 @@ export default function DailyVocabulary() {
   if (isFinished) {
     return (
       <div className="min-h-[80vh] flex flex-col items-center justify-center p-6 text-center animate-in zoom-in duration-500">
-        <div className="w-24 h-24 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mb-6 shadow-xl shadow-emerald-500/20">
+        <div className="w-24 h-24 bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 rounded-full flex items-center justify-center mb-6 shadow-xl shadow-emerald-500/20">
           <Trophy className="w-12 h-12" />
         </div>
-        <h1 className="text-4xl font-display font-black mb-4">Awesome Work!</h1>
-        <p className="text-lg text-slate-500 max-w-sm mb-8">
+        <h1 className="text-4xl font-display font-black mb-4 dark:text-white">Awesome Work!</h1>
+        <p className="text-lg text-slate-500 dark:text-slate-400 max-w-sm mb-8">
           You've completed your 5 daily words. Consistency is the key to building a strong vocabulary.
         </p>
         <div className="flex gap-4">
@@ -126,13 +126,13 @@ export default function DailyVocabulary() {
 
       {/* Manual Navigation */}
       <div className="flex justify-between items-center pt-8 border-t border-slate-100 dark:border-slate-800/50 mt-12 relative z-10">
-        <Button variant="ghost" onClick={handlePrev} disabled={currentIndex === 0} className="rounded-full">
+        <Button variant="ghost" onClick={handlePrev} disabled={currentIndex === 0} className="rounded-full text-slate-600 dark:text-slate-400 dark:hover:bg-slate-800">
           Previous
         </Button>
-        <span className="text-sm font-bold text-slate-400">
+        <span className="text-sm font-bold text-slate-400 dark:text-slate-500">
           {currentIndex + 1} of {words.length}
         </span>
-        <Button onClick={handleNext} className="rounded-full px-6">
+        <Button onClick={handleNext} className="rounded-full px-6 shadow-lg shadow-primary-500/20">
           {currentIndex === words.length - 1 ? 'Finish' : 'Next Word'} <ChevronRight className="w-4 h-4 ml-1" />
         </Button>
       </div>

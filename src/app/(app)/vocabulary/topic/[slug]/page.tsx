@@ -33,22 +33,22 @@ export default function TopicVocabulary() {
           <h1 className="text-2xl font-display font-bold text-slate-900 dark:text-white capitalize">
             {topicData.name} Vocabulary
           </h1>
-          <p className="text-sm text-slate-500">{words.length} words inside this topic.</p>
+          <p className="text-sm text-slate-500 dark:text-slate-400">{words.length} words inside this topic.</p>
         </div>
       </header>
 
       {words.length === 0 ? (
-        <div className="text-center p-12 bg-slate-50 dark:bg-slate-900 rounded-3xl">
-          <p className="text-slate-500">More words coming soon to this topic.</p>
+        <div className="text-center p-12 bg-slate-50 dark:bg-slate-900 rounded-3xl border border-dashed border-slate-200 dark:border-slate-800">
+          <p className="text-slate-500 dark:text-slate-400">More words coming soon to this topic.</p>
         </div>
       ) : (
         <div className="space-y-12">
           {words.map((word, index) => (
             <div key={word.id} className="relative">
-              <div className="absolute -left-4 top-6 w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-400 font-bold flex items-center justify-center text-xs ml-4 z-10 border border-white dark:border-slate-950">
+              <div className="absolute -left-2 md:-left-4 top-8 w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 font-bold flex items-center justify-center text-xs z-10 border-2 border-white dark:border-slate-950 shadow-sm">
                 {index + 1}
               </div>
-              <div className="pl-6">
+              <div className="pl-4 md:pl-8">
                 <WordCard word={word} />
               </div>
             </div>

@@ -61,7 +61,7 @@ export default function PracticeHubPage() {
         <h1 className="text-3xl font-display font-bold text-slate-900 dark:text-white mb-2">
           Practice Hub
         </h1>
-        <p className="text-slate-500">Choose a mode to start improving your English.</p>
+        <p className="text-slate-500 dark:text-slate-400">Choose a mode to start improving your English.</p>
       </header>
 
       <div className="grid md:grid-cols-2 gap-6 relative">
@@ -72,7 +72,7 @@ export default function PracticeHubPage() {
           const Icon = mode.icon;
           return (
             <Link key={mode.id} href={mode.link}>
-              <Card className="p-6 h-full hover:shadow-xl hover:-translate-y-1 transition-all border-slate-200 dark:border-slate-800 hover:border-primary-200 dark:hover:border-primary-800 group">
+              <Card className="p-6 h-full hover:shadow-xl hover:-translate-y-1 transition-all border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-primary-200 dark:hover:border-primary-800 group">
                 <div className="flex items-start gap-4">
                   <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 transition-transform group-hover:scale-110 ${mode.color}`}>
                     <Icon className="w-7 h-7" />

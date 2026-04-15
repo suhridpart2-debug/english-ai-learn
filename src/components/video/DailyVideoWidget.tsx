@@ -87,7 +87,7 @@ export function DailyVideoWidget() {
 
       <div className="flex justify-center pt-2">
         <Link href="/learn/videos">
-          <Button variant="ghost" className="text-primary-600 font-bold hover:bg-primary-50">
+          <Button variant="ghost" className="text-primary-600 font-bold hover:bg-primary-50 dark:hover:bg-primary-950/30">
             View Video Hub <ArrowRight className="w-4 h-4 ml-2" />
           </Button>
         </Link>

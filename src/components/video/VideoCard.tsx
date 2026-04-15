@@ -65,9 +65,9 @@ export function VideoCard({ video, isWatched, isSaved, progress }: VideoCardProp
         <div className="p-4 flex-1 flex flex-col">
           <div className="flex items-center gap-2 mb-2">
             <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full 
-              ${video.difficulty === 'Beginner' ? 'bg-green-100 text-green-700' : 
-                video.difficulty === 'Intermediate' ? 'bg-amber-100 text-amber-700' : 
-                'bg-red-100 text-red-700'}`}>
+              ${video.difficulty === 'Beginner' ? 'bg-green-100 text-green-700 dark:bg-green-500/20 dark:text-green-400' : 
+                video.difficulty === 'Intermediate' ? 'bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-400' : 
+                'bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-400'}`}>
               {video.difficulty}
             </span>
             <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">

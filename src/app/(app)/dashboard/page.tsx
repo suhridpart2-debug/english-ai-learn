@@ -157,58 +157,63 @@ export default function DashboardPage() {
           <h1 className="text-3xl font-display font-bold text-slate-900 dark:text-white">
             Hi, {profile?.name || "Student"} 👋
           </h1>
-          <p className="text-slate-500">You've reached <span className="text-primary-600 font-bold">{stats.avg_fluency}%</span> fluency. Keep going!</p>
+          <p className="text-slate-500 dark:text-slate-400">You've reached <span className="text-primary-600 dark:text-primary-400 font-bold">{stats.avg_fluency}%</span> fluency. Keep going!</p>
         </div>
       </header>
 
       {/* Stats Grid */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-        <Card className="p-4 flex flex-col justify-between bg-gradient-to-br from-orange-50 to-red-50 dark:from-orange-950/30 dark:to-red-950/30 border-orange-100 dark:border-orange-900/50">
+        <Card className="p-4 flex flex-col justify-between bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-sm relative overflow-hidden group">
+          <div className="absolute top-0 right-0 w-16 h-16 bg-orange-500/5 rounded-full -mr-8 -mt-8 group-hover:bg-orange-500/10 transition-colors" />
           <div className="w-10 h-10 rounded-full bg-orange-100 dark:bg-orange-500/20 text-orange-600 dark:text-orange-400 flex items-center justify-center mb-3">
             <Flame className="w-5 h-5" />
           </div>
           <div>
-            <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Streak</p>
+            <p className="text-xs font-bold text-slate-500 dark:text-slate-500 uppercase tracking-wider mb-0.5">Streak</p>
             <p className="text-2xl font-bold font-display text-slate-900 dark:text-white">{stats.current_streak} Days</p>
           </div>
         </Card>
 
-        <Card className="p-4 flex flex-col justify-between bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 border-blue-100 dark:border-blue-900/50">
+        <Card className="p-4 flex flex-col justify-between bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-sm relative overflow-hidden group">
+          <div className="absolute top-0 right-0 w-16 h-16 bg-blue-500/5 rounded-full -mr-8 -mt-8 group-hover:bg-blue-500/10 transition-colors" />
           <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400 flex items-center justify-center mb-3">
             <CalendarDays className="w-5 h-5" />
           </div>
           <div>
-            <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Sessions</p>
+            <p className="text-xs font-bold text-slate-500 dark:text-slate-500 uppercase tracking-wider mb-0.5">Sessions</p>
             <p className="text-2xl font-bold font-display text-slate-900 dark:text-white">{stats.total_sessions}</p>
           </div>
         </Card>
 
-        <Card className="p-4 flex flex-col justify-between">
+        <Card className="p-4 flex flex-col justify-between bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-sm relative overflow-hidden group">
+          <div className="absolute top-0 right-0 w-16 h-16 bg-emerald-500/5 rounded-full -mr-8 -mt-8 group-hover:bg-emerald-500/10 transition-colors" />
           <div className="w-10 h-10 rounded-full bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mb-3">
             <Clock className="w-5 h-5" />
           </div>
           <div>
-            <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Total Talk</p>
+            <p className="text-xs font-bold text-slate-500 dark:text-slate-500 uppercase tracking-wider mb-0.5">Total Talk</p>
             <p className="text-2xl font-bold font-display text-slate-900 dark:text-white">{stats.speaking_time}</p>
           </div>
         </Card>
         
-        <Card className="p-4 flex flex-col justify-between">
+        <Card className="p-4 flex flex-col justify-between bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-sm relative overflow-hidden group">
+          <div className="absolute top-0 right-0 w-16 h-16 bg-purple-500/5 rounded-full -mr-8 -mt-8 group-hover:bg-purple-500/10 transition-colors" />
           <div className="w-10 h-10 rounded-full bg-purple-100 dark:bg-purple-500/20 text-purple-600 dark:text-purple-400 flex items-center justify-center mb-3">
             <TrendingUp className="w-5 h-5" />
           </div>
           <div>
-            <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Avg Fluency</p>
+            <p className="text-xs font-bold text-slate-500 dark:text-slate-500 uppercase tracking-wider mb-0.5">Avg Fluency</p>
             <p className="text-2xl font-bold font-display text-slate-900 dark:text-white">{stats.avg_fluency}%</p>
           </div>
         </Card>
 
-        <Card className="p-4 flex flex-col justify-between">
+        <Card className="p-4 flex flex-col justify-between bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-sm relative overflow-hidden group">
+          <div className="absolute top-0 right-0 w-16 h-16 bg-cyan-500/5 rounded-full -mr-8 -mt-8 group-hover:bg-cyan-500/10 transition-colors" />
           <div className="w-10 h-10 rounded-full bg-cyan-100 dark:bg-cyan-500/20 text-cyan-600 dark:text-cyan-400 flex items-center justify-center mb-3">
             <BookOpen className="w-5 h-5" />
           </div>
           <div>
-            <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Vocabulary</p>
+            <p className="text-xs font-bold text-slate-500 dark:text-slate-500 uppercase tracking-wider mb-0.5">Vocabulary</p>
             <p className="text-2xl font-bold font-display text-slate-900 dark:text-white">{stats.vocab_count}</p>
           </div>
         </Card>
@@ -237,15 +242,23 @@ export default function DashboardPage() {
             </div>
           </Card>
 
-          <Card className="p-6">
-            <h3 className="text-lg font-bold font-display mb-6">Performance Trend</h3>
+          <Card className="p-6 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800">
+            <h3 className="text-lg font-bold font-display mb-6 dark:text-white">Performance Trend</h3>
             <div className="h-[250px] w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={chartData}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" className="dark:stroke-slate-800" />
                   <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 12}} dy={10} />
                   <YAxis axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 12}} dx={-10} />
-                  <Tooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }} />
+                  <Tooltip 
+                    contentStyle={{ 
+                      borderRadius: '12px', 
+                      border: 'none', 
+                      boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)',
+                      backgroundColor: 'var(--tw-background-opacity, #ffffff)',
+                    }}
+                    itemStyle={{ fontWeight: 'bold' }}
+                  />
                   <Line type="monotone" dataKey="fluency" stroke="#4F46E5" strokeWidth={3} dot={{r: 4, strokeWidth: 2}} activeDot={{r: 6}} />
                   <Line type="monotone" dataKey="grammar" stroke="#10B981" strokeWidth={3} dot={{r: 4, strokeWidth: 2}} />
                 </LineChart>
@@ -256,17 +269,17 @@ export default function DashboardPage() {
 
         <div className="space-y-8">
           {/* Real Dynamic Focus Areas */}
-          <Card className="p-6">
-            <h3 className="text-lg font-bold font-display mb-4">Focus Areas</h3>
+          <Card className="p-6 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800">
+            <h3 className="text-lg font-bold font-display mb-4 dark:text-white">Focus Areas</h3>
             <div className="space-y-4">
               {focusAreas.map((area, idx) => (
                 <div key={idx} className={`p-3 rounded-xl border ${
-                  area.status === 'Needs Work' ? 'bg-red-50 dark:bg-red-950/30 border-red-100 dark:border-red-900/50' : 'bg-emerald-50 dark:bg-emerald-950/30 border-emerald-100 dark:border-emerald-900/50'
+                  area.status === 'Needs Work' ? 'bg-red-50 dark:bg-red-950/20 border-red-100 dark:border-red-900/30' : 'bg-emerald-50 dark:bg-emerald-950/20 border-emerald-100 dark:border-emerald-900/30'
                 }`}>
                   <div className="flex justify-between items-center mb-1">
                     <span className={`font-semibold ${area.status === 'Needs Work' ? 'text-red-900 dark:text-red-400' : 'text-emerald-900 dark:text-emerald-400'}`}>{area.title}</span>
                     <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
-                      area.status === 'Needs Work' ? 'bg-red-100 text-red-600' : 'bg-emerald-100 text-emerald-600'
+                      area.status === 'Needs Work' ? 'bg-red-100 text-red-600 dark:bg-red-500/20 dark:text-red-400' : 'bg-emerald-100 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400'
                     }`}>{area.status}</span>
                   </div>
                   <p className="text-xs text-slate-500 line-through mb-1">"{area.original}"</p>

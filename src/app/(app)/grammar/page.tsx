@@ -26,7 +26,7 @@ export default function GrammarHub() {
         <h1 className="text-3xl font-display font-bold text-slate-900 dark:text-white mb-2">
           Grammar Coach
         </h1>
-        <p className="text-slate-500">Master English rules, avoid common mistakes, and speak confidently.</p>
+        <p className="text-slate-500 dark:text-slate-400">Master English rules, avoid common mistakes, and speak confidently.</p>
       </header>
 
       {/* Main Action - Start Learning */}
@@ -54,8 +54,8 @@ export default function GrammarHub() {
       {/* Explore Topics */}
       <div>
         <div className="flex items-center gap-2 mb-6 mt-10">
-          <LayoutGrid className="w-5 h-5 text-slate-500" />
-          <h3 className="text-xl font-bold font-display">Grammar Topics</h3>
+          <LayoutGrid className="w-5 h-5 text-slate-500 dark:text-slate-400" />
+          <h3 className="text-xl font-bold font-display dark:text-white">Grammar Topics</h3>
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">

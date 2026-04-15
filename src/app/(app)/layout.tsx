@@ -11,7 +11,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         {/* Desktop Sidebar (Hidden on mobile) */}
         <aside className="hidden md:flex w-64 h-screen fixed left-0 top-0 border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 flex-col">
           <div className="p-6 flex items-center justify-between">
-            <Link href="/dashboard" className="flex items-center gap-2 font-display font-bold text-xl hover:opacity-80 transition-opacity">
+            <Link href="/dashboard" className="flex items-center gap-2 font-display font-bold text-xl hover:opacity-80 transition-opacity dark:text-white">
               <div className="bg-primary-600 text-white p-1.5 rounded-lg">
                 <Mic className="w-5 h-5" />
               </div>

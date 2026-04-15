@@ -82,18 +82,18 @@ export default function VocabularyHub() {
       </Card>
 
       {/* Wordbook / Saved */}
-      <Card className="p-4 hover:border-primary-300 dark:hover:border-primary-800 transition-colors cursor-pointer group">
+      <Card className="p-4 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:border-primary-300 dark:hover:border-primary-800 transition-colors cursor-pointer group shadow-sm">
         <Link href="/vocabulary/saved" className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 flex items-center justify-center group-hover:bg-primary-100 group-hover:text-primary-600 transition-colors">
+            <div className="w-12 h-12 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 flex items-center justify-center group-hover:bg-primary-100 group-hover:text-primary-600 dark:group-hover:bg-primary-900/30 dark:group-hover:text-primary-400 transition-colors">
               <BookmarkCheck className="w-6 h-6" />
             </div>
             <div>
-              <h3 className="font-bold text-lg">My Wordbook</h3>
-              <p className="text-sm text-slate-500">Review your saved and weak words</p>
+              <h3 className="font-bold text-lg dark:text-white">My Wordbook</h3>
+              <p className="text-sm text-slate-500 dark:text-slate-400">Review your saved and weak words</p>
             </div>
           </div>
-          <div className="w-10 h-10 rounded-full bg-slate-50 dark:bg-slate-900 flex items-center justify-center group-hover:bg-primary-50 dark:group-hover:bg-primary-950/50 transition-colors">
+          <div className="w-10 h-10 rounded-full bg-slate-50 dark:bg-slate-800 flex items-center justify-center group-hover:bg-primary-50 dark:group-hover:bg-primary-950/50 transition-colors">
             <ArrowRight className="w-5 h-5 text-slate-400 group-hover:text-primary-500" />
           </div>
         </Link>
@@ -104,22 +104,22 @@ export default function VocabularyHub() {
         <div>
           <div className="flex items-center gap-2 mb-4">
             <LayoutGrid className="w-5 h-5 text-slate-500" />
-            <h3 className="text-xl font-bold font-display">Browse by Topic</h3>
+            <h3 className="text-xl font-bold font-display dark:text-white">Browse by Topic</h3>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {VOCABULARY_TOPICS.map(topic => {
               const count = VOCABULARY_DATA.filter(w => w.topic === topic.slug).length;
               return (
                 <Link key={topic.slug} href={`/vocabulary/topic/${topic.slug}`}>
-                  <Card className="p-5 hover:border-primary-300 dark:hover:border-primary-800 transition-all hover:shadow-md cursor-pointer h-full border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 group">
+                  <Card className="p-5 hover:border-primary-300 dark:hover:border-primary-800 transition-all hover:shadow-md cursor-pointer h-full border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 group shadow-sm">
                     <div className="flex justify-between items-start mb-4">
-                      <div className="w-10 h-10 rounded-lg bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-bold text-lg">
+                      <div className="w-10 h-10 rounded-lg bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-bold text-lg">
                         {topic.name.charAt(0)}
                       </div>
                       <span className="text-xs text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-full font-medium">{count} words</span>
                     </div>
                     <h4 className="font-bold text-slate-900 dark:text-white mb-1">{topic.name}</h4>
-                    <p className="text-sm text-slate-500 line-clamp-2">{topic.description}</p>
+                    <p className="text-sm text-slate-500 dark:text-slate-400 line-clamp-2">{topic.description}</p>
                     <div className="mt-3 flex items-center text-xs text-primary-600 dark:text-primary-400 font-semibold group-hover:gap-2 transition-all gap-1">
                       Start learning <ArrowRight className="w-3 h-3" />
                     </div>
@@ -143,7 +143,7 @@ export default function VocabularyHub() {
                 placeholder="Search words, meanings..."
                 value={search}
                 onChange={e => setSearch(e.target.value)}
-                className="pl-10 h-12 rounded-xl"
+                className="pl-10 h-12 rounded-xl bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800"
               />
               {search && (
                 <button
