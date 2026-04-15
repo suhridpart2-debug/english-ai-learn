@@ -36,6 +36,7 @@ export async function updateSession(request: NextRequest) {
   } = await supabase.auth.getUser()
 
   if (
+    !user &&
     !request.nextUrl.pathname.startsWith('/auth') &&
     !request.nextUrl.pathname.startsWith('/onboarding') &&
     !request.nextUrl.pathname.startsWith('/api/cron') &&
