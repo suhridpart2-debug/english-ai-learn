@@ -3,7 +3,8 @@
 import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Volume2, BookmarkPlus, BookmarkCheck, CheckCircle2, Languages, ListTree, RefreshCw } from "lucide-react";
+import { Volume2, BookmarkPlus, BookmarkCheck, CheckCircle2, Languages, ListTree, RefreshCw, Mic } from "lucide-react";
+import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import type { VocabularyWord } from "@/lib/data/vocabularyData";
 import { supabase } from "@/lib/supabaseClient";
@@ -31,12 +32,34 @@ export function WordCard({ word, isSaved = false, onSaveToggle, onMarkLearned, o
       if (!session) return;
 
       if (newState) {
-        await supabase.from('saved_words').insert({ user_id: session.user.id, word_id: word.id });
+        await supabase.from('saved_words').upsert({ user_id: session.user.id, word_id: word.id });
       } else {
         await supabase.from('saved_words').delete().match({ user_id: session.user.id, word_id: word.id });
       }
     } catch (e) {
-      console.error("Save word error:", e);
+      console.error("WordCard: Save toggle error:", e);
+      setSaved(!newState); // Revert UI if error
+    }
+  };
+
+  const handleMarkAsLearned = async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
+      const { error } = await supabase
+        .from('user_word_progress')
+        .upsert({
+          user_id: session.user.id,
+          word_id: word.id,
+          status: 'learned',
+          learned_at: new Date().toISOString()
+        });
+
+      if (error) throw error;
+      if (onMarkLearned) onMarkLearned(word.id);
+    } catch (e) {
+      console.error("WordCard: Mark learned error:", e);
     }
   };
 
@@ -138,6 +161,15 @@ export function WordCard({ word, isSaved = false, onSaveToggle, onMarkLearned, o
                )}
             </div>
 
+            {/* Pronunciation Practice */}
+            <div className="pt-6 mt-6 border-t border-slate-100 dark:border-slate-800 flex flex-col items-center">
+              <Link href={`/practice/pronunciation/${word.id}`} className="w-full">
+                <Button className="w-full rounded-full bg-primary-600 hover:bg-primary-700 text-white shadow-lg shadow-primary-600/30 font-bold tracking-wide">
+                  <Mic className="w-4 h-4 mr-2" /> AI Pronunciation Coach
+                </Button>
+              </Link>
+            </div>
+
             {/* Actions */}
             {(onMarkLearned || onReviseLater) && (
               <div className="flex justify-center gap-3 pt-6">
@@ -147,7 +179,7 @@ export function WordCard({ word, isSaved = false, onSaveToggle, onMarkLearned, o
                   </Button>
                 )}
                 {onMarkLearned && (
-                  <Button className="rounded-full px-8 bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-600/30" onClick={() => onMarkLearned(word.id)}>
+                  <Button className="rounded-full px-8 bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-600/30" onClick={handleMarkAsLearned}>
                     <CheckCircle2 className="w-4 h-4 mr-2" /> I Know This
                   </Button>
                 )}

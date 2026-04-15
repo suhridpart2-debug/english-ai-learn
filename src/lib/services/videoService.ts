@@ -39,35 +39,51 @@ export class VideoService {
    * Returns 3 videos for the current 4-hour cycle.
    * Now fetches from Supabase rotated_video_sets.
    */
+  /**
+   * Returns 3 videos for the current 4-hour cycle.
+   * Now fetches personalized videos from refreshContent service.
+   */
   static async getDailyVideosAsync(): Promise<VideoLearningObject[]> {
     try {
-      // 1. Get current cycle
-      const { data: cycle } = await supabase
-        .from('content_refresh_cycles')
-        .select('cycle_index')
-        .order('last_refresh_at', { ascending: false })
-        .limit(1)
-        .single();
+      const { getCurrentRotatedContent, triggerRefreshIfNeeded } = await import("./refreshContent");
       
-      if (!cycle) return DAILY_VIDEOS.slice(0, 3); // Fallback
+      // Ensure we have fresh content if needed
+      await triggerRefreshIfNeeded();
+      
+      // Get the IDs selected for this user
+      const rotated = await getCurrentRotatedContent();
+      
+      const { data: dbVideosData } = await supabase.from('daily_videos').select('*');
+      let videoPool = DAILY_VIDEOS;
 
-      // 2. Get rotated ids
-      const { data: rotated } = await supabase
-        .from('rotated_video_sets')
-        .select('video_ids')
-        .eq('cycle_index', cycle.cycle_index)
-        .single();
+      if (dbVideosData && dbVideosData.length > 0) {
+        videoPool = dbVideosData.map((dbV: any) => ({
+          id: dbV.id,
+          title: dbV.title,
+          youtubeId: dbV.youtube_id,
+          category: dbV.category,
+          difficulty: dbV.difficulty,
+          summary: dbV.summary,
+          vocabulary: dbV.vocabulary || [],
+          keyPhrases: dbV.key_phrases || [],
+          transcript: dbV.transcript || [],
+          duration: dbV.duration_seconds || 300,
+        })) as VideoLearningObject[];
+      }
 
-      if (!rotated || !rotated.video_ids) return DAILY_VIDEOS.slice(0, 3);
+      if (!rotated || !rotated.videoIds || rotated.videoIds.length === 0) {
+        return videoPool.slice(0, 3); // Final fallback
+      }
 
       // 3. Map IDs back to objects from the pool
-      const selected = rotated.video_ids
-        .map((id: string) => DAILY_VIDEOS.find(v => v.id === id))
+      const selected = rotated.videoIds
+        .map((id: string) => videoPool.find(v => v.id === id))
         .filter(Boolean) as VideoLearningObject[];
 
-      return selected.length > 0 ? selected : DAILY_VIDEOS.slice(0, 3);
+      return selected.length > 0 ? selected : videoPool.slice(0, 3);
     } catch (err) {
       console.error("VideoService: Error fetching rotated videos", err);
+      // Absolute fallback if everything crashes
       return DAILY_VIDEOS.slice(0, 3);
     }
   }
@@ -104,18 +120,55 @@ export class VideoService {
    * Toggles "Save for Later"
    */
   static async toggleSave(videoId: string, saved: boolean) {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
+    if (!videoId) throw new Error("videoId is required to toggle save");
 
-    const { error } = await supabase
-      .from('user_video_progress')
-      .upsert({
-        user_id: user.id,
-        video_id: videoId,
-        saved,
-      }, { onConflict: 'user_id,video_id' });
+    const { data: { session }, error: authError } = await supabase.auth.getSession();
+    const user = session?.user;
+    if (!user) throw new Error("User not authenticated");
 
-    if (error) console.error("Error toggling video save:", error);
+    if (!saved) {
+      // Case A - Unsave
+      // We don't delete to avoid losing 'watched' state. Just update saved=false.
+      const { error } = await supabase
+        .from('user_video_progress')
+        .update({ saved: false })
+        .eq('user_id', user.id)
+        .eq('video_id', videoId);
+        
+      if (error) {
+         console.error("Error toggling video save (unsave):", {
+           message: error.message,
+           details: error.details,
+           hint: error.hint,
+           code: error.code,
+           full: error
+         });
+         throw error;
+      }
+      return { saved: false };
+    } else {
+      // Case B - Save
+      const { error } = await supabase
+        .from('user_video_progress')
+        .upsert({
+          user_id: user.id,
+          video_id: videoId,
+          saved: true,
+          updated_at: new Date().toISOString()
+        }, { onConflict: 'user_id,video_id' });
+
+      if (error) {
+         console.error("Error toggling video save (save):", {
+           message: error.message,
+           details: error.details,
+           hint: error.hint,
+           code: error.code,
+           full: error
+         });
+         throw error;
+      }
+      return { saved: true };
+    }
   }
 
   /**
@@ -162,5 +215,27 @@ export class VideoService {
     });
     
     return progressMap;
+  }
+
+  /**
+   * Fetches all videos saved by the user
+   */
+  static async getSavedVideosAsync(): Promise<VideoLearningObject[]> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return [];
+
+    const { data, error } = await supabase
+      .from('user_video_progress')
+      .select('video_id')
+      .eq('user_id', user.id)
+      .eq('saved', true);
+
+    if (error || !data) {
+      console.error("Error fetching saved videos:", error);
+      return [];
+    }
+
+    const savedIds = data.map(d => d.video_id);
+    return DAILY_VIDEOS.filter(v => savedIds.includes(v.id));
   }
 }

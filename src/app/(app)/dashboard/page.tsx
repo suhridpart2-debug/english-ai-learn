@@ -31,6 +31,8 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/lib/supabaseClient";
 import { DailyVideoWidget } from "@/components/video/DailyVideoWidget";
 import { triggerRefreshIfNeeded } from "@/lib/services/refreshContent";
+import { DailyVocabWidget } from "@/components/vocabulary/DailyVocabWidget";
+import { SavedContentWidget } from "@/components/dashboard/SavedContentWidget";
 
 interface StatData {
   current_streak: number;
@@ -77,13 +79,14 @@ export default function DashboardPage() {
 
         const userId = session.user.id;
 
-        const [profileRes, streakRes, vocabRes] = await Promise.all([
+        const [profileRes, streakRes, vocabRes, savedVideosRes] = await Promise.all([
           supabase.from("profiles").select("*").eq("id", userId).single(),
           supabase.from("streaks").select("*").eq("user_id", userId).single(),
           supabase
             .from("saved_words")
             .select("id", { count: "exact", head: true })
             .eq("user_id", userId),
+          supabase.from("user_video_progress").select("video_id").eq("user_id", userId).eq("saved", true)
         ]);
 
         const [challengeSessions, aiSessions] = await Promise.all([
@@ -175,6 +178,10 @@ export default function DashboardPage() {
         setProfile(profileRes.data);
         setFocusAreas(processedFocus);
         setRecentActivity(last);
+
+        // Update Saved Content Section
+        // (Implementation note: This will be used in the UI below)
+        setIsLoading(false);
 
         const mockChart = [
           { day: "Mon", fluency: 65, grammar: 70 },
@@ -287,6 +294,8 @@ export default function DashboardPage() {
           </div>
         </Card>
 
+
+
         <Card className="relative overflow-hidden p-4">
           <div className="absolute -right-8 -top-8 h-16 w-16 rounded-full bg-cyan-500/5" />
           <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-cyan-100 text-cyan-600 dark:bg-cyan-500/20 dark:text-cyan-400">
@@ -303,7 +312,11 @@ export default function DashboardPage() {
         </Card>
       </div>
 
+      <DailyVocabWidget />
+
       <DailyVideoWidget />
+
+      <SavedContentWidget />
 
       <div className="grid gap-8 md:grid-cols-3">
         <div className="space-y-8 md:col-span-2">

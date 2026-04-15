@@ -1,106 +1,137 @@
 import { createClient } from "@/lib/supabase/client";
-import { VOCABULARY_DATA } from "@/lib/data/vocabularyData";
-import { DAILY_VIDEOS } from "@/lib/data/dailyVideos";
+import { VOCABULARY_DATA, VocabularyWord } from "@/lib/data/vocabularyData";
+import { DAILY_VIDEOS, VideoLearningObject } from "@/lib/data/dailyVideos";
 
 const REFRESH_INTERVAL_HOURS = 4;
 
 export async function triggerRefreshIfNeeded() {
   const supabase = createClient();
+  const { data: { session } } = await supabase.auth.getSession();
   
-  // 1. Get global refresh state
-  const { data: cycle, error: cycleError } = await supabase
-    .from('content_refresh_cycles')
-    .select('*')
-    .order('last_refresh_at', { ascending: false })
-    .limit(1)
-    .single();
+  if (!session) return;
+  const userId = session.user.id;
 
-  if (cycleError && cycleError.code !== 'PGRST116') {
-    console.error("RefreshService: Error fetching cycle", cycleError);
-    return;
-  }
+  // 1. Get personalized refresh state
+  let { data: state, error: stateError } = await supabase
+    .from('user_rotation_state')
+    .select('*')
+    .eq('user_id', userId)
+    .single();
 
   const now = new Date();
   let shouldRefresh = false;
-  let nextCycleIndex = 0;
 
-  if (!cycle) {
+  if (!state) {
     shouldRefresh = true;
   } else {
-    const lastRefresh = new Date(cycle.last_refresh_at);
+    const lastRefresh = new Date(state.last_vocab_rotation_at);
     const diffHours = (now.getTime() - lastRefresh.getTime()) / (1000 * 60 * 60);
     
     if (diffHours >= REFRESH_INTERVAL_HOURS) {
       shouldRefresh = true;
-      nextCycleIndex = cycle.cycle_index + 1;
     }
   }
 
   if (shouldRefresh) {
-    console.log("RefreshService: Rotating content for cycle", nextCycleIndex);
+    console.log("RefreshService: Personalizing content for user", userId);
     
     // A. Select 5 Vocabulary Words
-    // Logic: Level-based selection + semi-random for now (later can be personalized)
-    // We shuffle the static pool and pick 5
-    const shuffledVocab = [...VOCABULARY_DATA].sort(() => 0.5 - Math.random());
+    // Filter out words marked as 'learned'
+    const { data: learnedWords } = await supabase
+      .from('user_word_progress')
+      .select('word_id')
+      .eq('user_id', userId)
+      .eq('status', 'learned');
+    
+    const learnedIds = new Set(learnedWords?.map(w => w.word_id) || []);
+    let availableVocab = VOCABULARY_DATA.filter(v => !learnedIds.has(v.id));
+    
+    // Strict Rotation: Deprioritize words from the immediate previous cycle
+    const previousVocabIds = new Set(state?.current_vocab_ids || []);
+    let freshVocab = availableVocab.filter(v => !previousVocabIds.has(v.id));
+    
+    // Fallback if dataset is too small
+    if (freshVocab.length < 5) freshVocab = availableVocab;
+    if (freshVocab.length < 5) freshVocab = VOCABULARY_DATA;
+    
+    const shuffledVocab = [...freshVocab].sort(() => 0.5 - Math.random());
     const selectedVocabIds = shuffledVocab.slice(0, 5).map(v => v.id);
 
     // B. Select 3 Videos
-    const shuffledVideos = [...DAILY_VIDEOS].sort(() => 0.5 - Math.random());
-    const selectedVideoIds = shuffledVideos.slice(0, 3).map(v => v.id);
-
-    // C. Persist to DB
-    const { error: updateError } = await supabase
-      .from('content_refresh_cycles')
-      .upsert({
-        id: cycle?.id || undefined,
-        last_refresh_at: now.toISOString(),
-        cycle_index: nextCycleIndex,
-        status: 'active'
-      });
-
-    if (updateError) {
-      console.error("RefreshService: Error updating cycle", updateError);
-      return;
+    const { data: dbVideosData } = await supabase.from('daily_videos').select('*');
+    
+    let videoPool = DAILY_VIDEOS;
+    if (dbVideosData && dbVideosData.length > 0) {
+      videoPool = dbVideosData.map((dbV: any) => ({
+        id: dbV.id,
+        title: dbV.title,
+        youtubeId: dbV.youtube_id,
+        category: dbV.category,
+        difficulty: dbV.difficulty,
+        summary: dbV.summary,
+        vocabulary: dbV.vocabulary || [],
+        keyPhrases: dbV.key_phrases || [],
+        transcript: dbV.transcript || [],
+        duration: dbV.duration_seconds || 300,
+      })) as VideoLearningObject[];
     }
 
-    // Upsert rotated sets
-    await supabase.from('rotated_vocabulary_sets').upsert({
-      cycle_index: nextCycleIndex,
-      word_ids: selectedVocabIds
-    });
+    // Filter out videos marked as 'watched'
+    const { data: watchedVideos } = await supabase
+      .from('user_video_progress')
+      .select('video_id')
+      .eq('user_id', userId)
+      .eq('watched', true);
+    
+    const watchedIds = new Set(watchedVideos?.map(v => v.video_id) || []);
+    let availableVideos = videoPool.filter(v => !watchedIds.has(v.id));
+    
+    // Strict Rotation: Deprioritize videos from the immediate previous cycle
+    const previousVideoIds = new Set(state?.current_video_ids || []);
+    let freshVideos = availableVideos.filter(v => !previousVideoIds.has(v.id));
+    
+    // Fallback if dataset is too small
+    if (freshVideos.length < 3) freshVideos = availableVideos;
+    if (freshVideos.length < 3) freshVideos = videoPool;
+    
+    const shuffledVideos = [...freshVideos].sort(() => 0.5 - Math.random());
+    const selectedVideoIds = shuffledVideos.slice(0, 3).map(v => v.id);
 
-    await supabase.from('rotated_video_sets').upsert({
-      cycle_index: nextCycleIndex,
-      video_ids: selectedVideoIds
-    });
+    // C. Persist to User State
+    const { error: upsertError } = await supabase
+      .from('user_rotation_state')
+      .upsert({
+        user_id: userId,
+        last_vocab_rotation_at: now.toISOString(),
+        last_video_rotation_at: now.toISOString(),
+        current_vocab_ids: selectedVocabIds,
+        current_video_ids: selectedVideoIds
+      });
 
-    console.log("RefreshService: Content rotation complete.");
+    if (upsertError) {
+      console.error("RefreshService: Error updating user state", upsertError);
+    }
   }
 }
 
 /**
- * Fetches the current set of rotated content
+ * Fetches the current set of rotated content for the specific user
  */
 export async function getCurrentRotatedContent() {
   const supabase = createClient();
-  
-  const { data: cycle } = await supabase
-    .from('content_refresh_cycles')
-    .select('cycle_index')
-    .order('last_refresh_at', { ascending: false })
-    .limit(1)
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) return null;
+
+  const { data: state } = await supabase
+    .from('user_rotation_state')
+    .select('current_vocab_ids, current_video_ids')
+    .eq('user_id', session.user.id)
     .single();
 
-  if (!cycle) return null;
-
-  const [vocabRes, videoRes] = await Promise.all([
-    supabase.from('rotated_vocabulary_sets').select('word_ids').eq('cycle_index', cycle.cycle_index).single(),
-    supabase.from('rotated_video_sets').select('video_ids').eq('cycle_index', cycle.cycle_index).single()
-  ]);
+  if (!state) return null;
 
   return {
-    vocabularyIds: vocabRes.data?.word_ids || [],
-    videoIds: videoRes.data?.video_ids || []
+    vocabularyIds: state.current_vocab_ids || [],
+    videoIds: state.current_video_ids || []
   };
 }

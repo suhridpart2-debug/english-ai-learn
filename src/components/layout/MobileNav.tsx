@@ -16,8 +16,8 @@ export function MobileNav() {
   ];
 
   return (
-    <div className="fixed bottom-0 left-0 w-full z-50 p-4 pb-6 md:hidden">
-      <div className="glass-card rounded-3xl mx-auto flex items-center justify-between px-6 py-3 shadow-[0_8px_30px_rgb(0,0,0,0.12)]">
+    <div className="fixed bottom-0 left-0 w-full z-[60] p-4 pb-8 md:hidden safe-area-bottom">
+      <div className="glass-card rounded-3xl mx-auto flex items-center justify-between px-6 py-3 shadow-[0_8px_40px_rgba(0,0,0,0.15)] dark:shadow-primary-950/20">
         {links.map((link) => {
           const isActive = pathname.startsWith(link.href);
           const Icon = link.icon;

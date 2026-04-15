@@ -19,7 +19,7 @@ export default function AppLayout({
 }) {
   return (
     <AuthGuard>
-      <div className="min-h-screen bg-slate-50 pb-24 transition-colors dark:bg-slate-950 md:pb-0 md:pl-64">
+      <div className="min-h-screen bg-slate-50 pb-32 transition-colors dark:bg-slate-950 md:pb-0 md:pl-64">
         {/* Desktop Sidebar (Hidden on mobile) */}
         <aside className="fixed left-0 top-0 hidden h-screen w-64 flex-col border-r border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-950 md:flex">
           <div className="flex items-center justify-between p-6">
