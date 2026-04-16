@@ -65,9 +65,9 @@ export class VideoService {
   }
 
   /**
-   * Safe fetch for multiple records. Returns an array.
+   * Safe fetch for multiple records. Returns an array or null to signal fallback.
    */
-  private static async safeFetchMany(query: any): Promise<any[]> {
+  private static async safeFetchMany(query: any): Promise<any[] | null> {
     const { data, error } = await query;
     
     if (error) {
@@ -89,9 +89,9 @@ export class VideoService {
   }
 
   /**
-   * Safe fetch for a single record. Returns an object or null.
+   * Safe fetch for a single record. Returns an object, null, or undefined to signal fallback.
    */
-  private static async safeFetchOne(query: any): Promise<any | null> {
+  private static async safeFetchOne(query: any): Promise<any | null | undefined> {
     const { data, error } = await query;
 
     if (error) {
