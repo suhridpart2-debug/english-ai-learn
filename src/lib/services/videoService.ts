@@ -9,55 +9,34 @@ export interface VideoSession {
 
 export class VideoService {
   /**
-   * Gets the current 6-hour window index (0-3)
-   */
-  static getCurrentWindowIndex(): number {
-    return Math.floor(new Date().getHours() / 6);
-  }
-
-  /**
-   * Gets the next refresh timestamp
+   * Gets the next refresh timestamp (logic kept for UI timers)
    */
   static getNextRefreshTime(): Date {
     const now = new Date();
-    const currentWindow = this.getCurrentWindowIndex();
-    const nextWindowHour = (currentWindow + 1) * 6;
-    
     const nextRefresh = new Date(now);
-    nextRefresh.setHours(nextWindowHour, 0, 0, 0);
-    
-    // If it's already past 18:00, next refresh is 00:00 tomorrow
-    if (nextWindowHour >= 24) {
-      nextRefresh.setDate(now.getDate() + 1);
-      nextRefresh.setHours(0, 0, 0, 0);
-    }
-    
+    nextRefresh.setHours(24, 0, 0, 0); // Next refresh is midnight
     return nextRefresh;
   }
 
   /**
-   * Returns 3 videos for the current 4-hour cycle.
-   * Now fetches from Supabase rotated_video_sets.
-   */
-  /**
-   * Returns 3 videos for the current 4-hour cycle.
-   * Now fetches personalized videos from refreshContent service.
+   * Returns 3 stable featured videos for the current date from Supabase.
+   * Falls back to static data if DB is empty or selection hasn't happened.
    */
   static async getDailyVideosAsync(): Promise<VideoLearningObject[]> {
     try {
-      const { getCurrentRotatedContent, triggerRefreshIfNeeded } = await import("./refreshContent");
+      const today = new Date().toISOString().split('T')[0];
       
-      // Ensure we have fresh content if needed
-      await triggerRefreshIfNeeded();
-      
-      // Get the IDs selected for this user
-      const rotated = await getCurrentRotatedContent();
-      
-      const { data: dbVideosData } = await supabase.from('daily_videos').select('*');
-      let videoPool = DAILY_VIDEOS;
+      const { data: featured, error } = await supabase
+        .from('daily_videos')
+        .select('*')
+        .eq('is_featured_today', true)
+        .eq('featured_date', today)
+        .limit(3);
 
-      if (dbVideosData && dbVideosData.length > 0) {
-        videoPool = dbVideosData.map((dbV: any) => ({
+      if (error) throw error;
+
+      if (featured && featured.length > 0) {
+        return featured.map((dbV: any) => ({
           id: dbV.id,
           title: dbV.title,
           youtubeId: dbV.youtube_id,
@@ -67,33 +46,79 @@ export class VideoService {
           vocabulary: dbV.vocabulary || [],
           keyPhrases: dbV.key_phrases || [],
           transcript: dbV.transcript || [],
-          duration: dbV.duration_seconds || 300,
+          duration: dbV.duration_seconds || 0,
         })) as VideoLearningObject[];
       }
 
-      if (!rotated || !rotated.videoIds || rotated.videoIds.length === 0) {
-        return videoPool.slice(0, 3); // Final fallback
+      // Fallback if no featured videos for today
+      console.warn("VideoService: No featured videos for today found in DB. Falling back to pool.");
+      const { data: pool } = await supabase
+        .from('daily_videos')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(3);
+
+      if (pool && pool.length > 0) {
+        return pool.map((dbV: any) => ({
+          id: dbV.id,
+          title: dbV.title,
+          youtubeId: dbV.youtube_id,
+          category: dbV.category,
+          difficulty: dbV.difficulty,
+          summary: dbV.summary,
+          vocabulary: dbV.vocabulary || [],
+          keyPhrases: dbV.key_phrases || [],
+          transcript: dbV.transcript || [],
+          duration: dbV.duration_seconds || 0,
+        })) as VideoLearningObject[];
       }
 
-      // 3. Map IDs back to objects from the pool
-      const selected = rotated.videoIds
-        .map((id: string) => videoPool.find(v => v.id === id))
-        .filter(Boolean) as VideoLearningObject[];
-
-      return selected.length > 0 ? selected : videoPool.slice(0, 3);
+      return DAILY_VIDEOS.slice(0, 3);
     } catch (err) {
-      console.error("VideoService: Error fetching rotated videos", err);
-      // Absolute fallback if everything crashes
+      console.error("VideoService: Error fetching daily videos", err);
       return DAILY_VIDEOS.slice(0, 3);
     }
   }
 
   /**
-   * Old synchronous method kept for backward compatibility if needed, 
-   * but should be moved to getDailyVideosAsync.
+   * Deprecated: Use getDailyVideosAsync
    */
   static getDailyVideos(): VideoLearningObject[] {
     return DAILY_VIDEOS.slice(0, 3);
+  }
+
+  /**
+   * Returns all available educational videos from the DB
+   */
+  static async getAllVideosAsync(): Promise<VideoLearningObject[]> {
+    try {
+      const { data, error } = await supabase
+        .from('daily_videos')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      if (data && data.length > 0) {
+        return data.map((dbV: any) => ({
+          id: dbV.id,
+          title: dbV.title,
+          youtubeId: dbV.youtube_id,
+          category: dbV.category,
+          difficulty: dbV.difficulty,
+          summary: dbV.summary,
+          vocabulary: dbV.vocabulary || [],
+          keyPhrases: dbV.key_phrases || [],
+          transcript: dbV.transcript || [],
+          duration: dbV.duration_seconds || 0,
+        })) as VideoLearningObject[];
+      }
+
+      return DAILY_VIDEOS;
+    } catch (err) {
+      console.error("VideoService: Error fetching all videos", err);
+      return DAILY_VIDEOS;
+    }
   }
 
   /**
@@ -120,80 +145,27 @@ export class VideoService {
    * Toggles "Save for Later"
    */
   static async toggleSave(videoId: string, saved: boolean) {
-    if (!videoId) throw new Error("videoId is required to toggle save");
-
-    const { data: { session }, error: authError } = await supabase.auth.getSession();
-    const user = session?.user;
+    const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error("User not authenticated");
 
-    if (!saved) {
-      // Case A - Unsave
-      // We don't delete to avoid losing 'watched' state. Just update saved=false.
-      const { error } = await supabase
-        .from('user_video_progress')
-        .update({ saved: false })
-        .eq('user_id', user.id)
-        .eq('video_id', videoId);
-        
-      if (error) {
-         console.error("Error toggling video save (unsave):", {
-           message: error.message,
-           details: error.details,
-           hint: error.hint,
-           code: error.code,
-           full: error
-         });
-         throw error;
-      }
-      return { saved: false };
-    } else {
-      // Case B - Save
-      const { error } = await supabase
-        .from('user_video_progress')
-        .upsert({
-          user_id: user.id,
-          video_id: videoId,
-          saved: true,
-          updated_at: new Date().toISOString()
-        }, { onConflict: 'user_id,video_id' });
+    const { error } = await supabase
+      .from('user_video_progress')
+      .upsert({
+        user_id: user.id,
+        video_id: videoId,
+        saved,
+        updated_at: new Date().toISOString()
+      }, { onConflict: 'user_id,video_id' });
 
-      if (error) {
-         console.error("Error toggling video save (save):", {
-           message: error.message,
-           details: error.details,
-           hint: error.hint,
-           code: error.code,
-           full: error
-         });
-         throw error;
-      }
-      return { saved: true };
-    }
-  }
-
-  /**
-   * Returns a fallback video from the pool that isn't in the provided exclude list.
-   */
-  static getFallbackVideo(excludeIds: string[]): VideoLearningObject {
-    const pool = DAILY_VIDEOS.filter(v => !excludeIds.includes(v.id));
-    // If we've exhausted everything (unlikely), just return the first one
-    if (pool.length === 0) return DAILY_VIDEOS[0];
-    
-    // Pick one at random from the pool
-    const randomIndex = Math.floor(Math.random() * pool.length);
-    return pool[randomIndex];
+    if (error) throw error;
+    return { saved };
   }
 
   /**
    * Fetches user progress for a set of videos
    */
   static async getUserProgress(videoIds: string[]) {
-    // Basic validation to avoid UUID syntax errors in Supabase
-    const validIds = videoIds.filter(id => 
-      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)
-    );
-
-    if (validIds.length === 0) return {};
+    if (videoIds.length === 0) return {};
 
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return {};
@@ -201,13 +173,9 @@ export class VideoService {
     const { data, error } = await supabase
       .from('user_video_progress')
       .select('*')
-      .eq('user_id', user.id)
-      .in('video_id', validIds);
+      .in('video_id', videoIds);
 
-    if (error) {
-        console.error("Error fetching video progress:", error);
-        return {};
-    }
+    if (error) return {};
 
     const progressMap: Record<string, any> = {};
     data?.forEach(p => {
@@ -215,6 +183,16 @@ export class VideoService {
     });
     
     return progressMap;
+  }
+
+  /**
+   * Returns a fallback video from the pool that isn't in the provided exclude list.
+   */
+  static getFallbackVideo(excludeIds: string[]): VideoLearningObject {
+    const pool = DAILY_VIDEOS.filter(v => !excludeIds.includes(v.id));
+    if (pool.length === 0) return DAILY_VIDEOS[0];
+    const randomIndex = Math.floor(Math.random() * pool.length);
+    return pool[randomIndex];
   }
 
   /**
@@ -230,12 +208,10 @@ export class VideoService {
       .eq('user_id', user.id)
       .eq('saved', true);
 
-    if (error || !data) {
-      console.error("Error fetching saved videos:", error);
-      return [];
-    }
+    if (error || !data) return [];
 
     const savedIds = data.map(d => d.video_id);
-    return DAILY_VIDEOS.filter(v => savedIds.includes(v.id));
+    const all = await this.getAllVideosAsync();
+    return all.filter(v => savedIds.includes(v.id));
   }
 }

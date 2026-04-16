@@ -17,7 +17,7 @@ export class VocabService {
       }
 
       return rotated.vocabularyIds
-        .map(id => VOCABULARY_DATA.find(v => v.id === id))
+        .map((id: string) => VOCABULARY_DATA.find(v => v.id === id))
         .filter(Boolean) as VocabularyWord[];
     } catch (err) {
       console.error("VocabService: Error fetching daily words", err);

@@ -1,26 +1,45 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ChevronLeft, History, Bookmark, Sparkles, Timer, PlayCircle } from "lucide-react";
+import { ChevronLeft, History, Bookmark, Sparkles, Timer, PlayCircle, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { VideoService } from "@/lib/services/videoService";
-import { VideoLearningObject, DAILY_VIDEOS } from "@/lib/data/dailyVideos";
+import { VideoLearningObject } from "@/lib/data/dailyVideos";
 import { VideoCard } from "@/components/video/VideoCard";
 import { Card } from "@/components/ui/card";
 
 export default function VideoHubPage() {
   const [dailyVideos, setDailyVideos] = useState<VideoLearningObject[]>([]);
+  const [allVideos, setAllVideos] = useState<VideoLearningObject[]>([]);
   const [progress, setProgress] = useState<Record<string, any>>({});
-  const [allVideos, setAllVideos] = useState<VideoLearningObject[]>(DAILY_VIDEOS);
+  const [loading, setLoading] = useState(true);
   const [timeLeft, setTimeLeft] = useState("");
 
   useEffect(() => {
-    const daily = VideoService.getDailyVideos();
-    setDailyVideos(daily);
-    
-    // Load progress for all videos to categorize them
-    VideoService.getUserProgress(DAILY_VIDEOS.map(v => v.id)).then(setProgress);
+    async function initData() {
+      setLoading(true);
+      try {
+        const [daily, all] = await Promise.all([
+          VideoService.getDailyVideosAsync(),
+          VideoService.getAllVideosAsync()
+        ]);
+        
+        setDailyVideos(daily);
+        setAllVideos(all);
+
+        // Load progress for visible videos
+        const allIds = [...new Set([...daily.map(v => v.id), ...all.map(v => v.id)])];
+        const userProgress = await VideoService.getUserProgress(allIds);
+        setProgress(userProgress);
+      } catch (err) {
+        console.error("VideoHub: Failed to load data", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    initData();
 
     const timer = setInterval(() => {
         const next = VideoService.getNextRefreshTime();
@@ -36,6 +55,15 @@ export default function VideoHubPage() {
 
   const savedVideos = allVideos.filter(v => progress[v.id]?.saved);
   const watchedVideos = allVideos.filter(v => progress[v.id]?.watched && !dailyVideos.find(d => d.id === v.id));
+
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
+        <Loader2 className="w-8 h-8 text-primary-500 animate-spin" />
+        <p className="text-slate-500 font-medium tracking-tight">Loading your daily videos...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-10 pb-32 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -64,7 +92,7 @@ export default function VideoHubPage() {
           </div>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {dailyVideos.map(video => (
+          {dailyVideos.length > 0 ? dailyVideos.map(video => (
             <VideoCard 
               key={video.id} 
               video={video} 
@@ -72,7 +100,11 @@ export default function VideoHubPage() {
               isSaved={progress[video.id]?.saved}
               progress={progress[video.id]?.progress_seconds}
             />
-          ))}
+          )) : (
+            <div className="col-span-3 py-12 text-center border-2 border-dashed border-slate-100 rounded-2xl">
+              <p className="text-slate-400">No featured videos found for today yet.</p>
+            </div>
+          )}
         </div>
       </section>
 
