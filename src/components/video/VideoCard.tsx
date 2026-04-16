@@ -1,16 +1,13 @@
 "use client";
-
 import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Play, CheckCircle2, Bookmark, BookmarkCheck, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { VideoLearningObject } from "@/lib/data/dailyVideos";
-import { supabase } from "@/lib/supabaseClient";
-
 import { VideoService } from "@/lib/services/videoService";
 
 interface VideoCardProps {
-  video: VideoLearningObject;
+  video: VideoLearningObject & { thumbnailUrl?: string };
   isWatched?: boolean;
   isSaved?: boolean;
   progress?: number;
@@ -20,6 +17,8 @@ interface VideoCardProps {
 export function VideoCard({ video, isWatched, isSaved, progress, onStateChange }: VideoCardProps) {
   const [saved, setSaved] = useState(isSaved);
   const [isUpdating, setIsUpdating] = useState(false);
+
+  const displayThumbnail = video.thumbnailUrl || `https://i.ytimg.com/vi/${video.youtubeId}/hqdefault.jpg`;
 
   const handleSaveToggle = async (e: React.MouseEvent) => {
     e.preventDefault();
@@ -37,8 +36,6 @@ export function VideoCard({ video, isWatched, isSaved, progress, onStateChange }
       if (onStateChange) onStateChange();
     } catch (err: any) {
       console.error("VideoCard: Error toggling save", err);
-      // Fallback UI error indication
-      alert(err.message || "Failed to save video.");
       setSaved(!newState); // Revert
     } finally {
       setIsUpdating(false);
@@ -51,7 +48,7 @@ export function VideoCard({ video, isWatched, isSaved, progress, onStateChange }
         {/* Thumbnail Placeholder / Image */}
         <div className="aspect-video bg-slate-100 dark:bg-slate-900 relative">
           <img 
-            src={`https://i.ytimg.com/vi/${video.youtubeId}/hqdefault.jpg`} 
+            src={displayThumbnail} 
             alt={video.title}
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
           />

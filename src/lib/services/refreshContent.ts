@@ -1,6 +1,5 @@
 import { createClient } from "@/lib/supabase/client";
-import { VOCABULARY_DATA, VocabularyWord } from "@/lib/data/vocabularyData";
-import { DAILY_VIDEOS, VideoLearningObject } from "@/lib/data/dailyVideos";
+import { VOCABULARY_DATA } from "@/lib/data/vocabularyData";
 
 const REFRESH_INTERVAL_HOURS = 4;
 
@@ -8,15 +7,23 @@ export async function triggerRefreshIfNeeded() {
   const supabase = createClient();
   const { data: { session } } = await supabase.auth.getSession();
   
-  if (!session) return;
+  if (!session || !session.user) {
+    console.log("RefreshService: No active session. Skipping.");
+    return;
+  }
+  
   const userId = session.user.id;
 
   // 1. Get personalized refresh state
-  let { data: state, error: stateError } = await supabase
+  let { data: state, error: fetchError } = await supabase
     .from('user_rotation_state')
     .select('*')
     .eq('user_id', userId)
     .single();
+
+  if (fetchError && fetchError.code !== 'PGRST116') { // PGRST116 is "No rows found"
+    console.warn("RefreshService: Error fetching rotation state", fetchError);
+  }
 
   const now = new Date();
   let shouldRefresh = false;
@@ -36,7 +43,6 @@ export async function triggerRefreshIfNeeded() {
     console.log("RefreshService: Personalizing content for user", userId);
     
     // A. Select 5 Vocabulary Words
-    // Filter out words marked as 'learned'
     const { data: learnedWords } = await supabase
       .from('user_word_progress')
       .select('word_id')
@@ -46,11 +52,9 @@ export async function triggerRefreshIfNeeded() {
     const learnedIds = new Set(learnedWords?.map(w => w.word_id) || []);
     let availableVocab = VOCABULARY_DATA.filter(v => !learnedIds.has(v.id));
     
-    // Strict Rotation: Deprioritize words from the immediate previous cycle
     const previousVocabIds = new Set(state?.current_vocab_ids || []);
     let freshVocab = availableVocab.filter(v => !previousVocabIds.has(v.id));
     
-    // Fallback if dataset is too small
     if (freshVocab.length < 5) freshVocab = availableVocab;
     if (freshVocab.length < 5) freshVocab = VOCABULARY_DATA;
     
@@ -60,23 +64,24 @@ export async function triggerRefreshIfNeeded() {
     // B. Select 3 Videos
     const { data: dbVideosData } = await supabase.from('daily_videos').select('*');
     
-    let videoPool = DAILY_VIDEOS;
-    if (dbVideosData && dbVideosData.length > 0) {
-      videoPool = dbVideosData.map((dbV: any) => ({
-        id: dbV.id,
-        title: dbV.title,
-        youtubeId: dbV.youtube_id,
-        category: dbV.category,
-        difficulty: dbV.difficulty,
-        summary: dbV.summary,
-        vocabulary: dbV.vocabulary || [],
-        keyPhrases: dbV.key_phrases || [],
-        transcript: dbV.transcript || [],
-        duration: dbV.duration_seconds || 300,
-      })) as VideoLearningObject[];
+    if (!dbVideosData || dbVideosData.length === 0) {
+      console.warn("RefreshService: No videos in database. Skipping video rotation.");
+      return; 
     }
 
-    // Filter out videos marked as 'watched'
+    const videoPool = dbVideosData.map((dbV: any) => ({
+      id: dbV.id,
+      title: dbV.title,
+      youtubeId: dbV.youtube_id,
+      category: dbV.category,
+      difficulty: dbV.difficulty,
+      summary: dbV.summary,
+      vocabulary: dbV.vocabulary || [],
+      keyPhrases: dbV.key_phrases || [],
+      transcript: dbV.transcript || [],
+      duration: dbV.duration_seconds || 300,
+    }));
+
     const { data: watchedVideos } = await supabase
       .from('user_video_progress')
       .select('video_id')
@@ -86,11 +91,9 @@ export async function triggerRefreshIfNeeded() {
     const watchedIds = new Set(watchedVideos?.map(v => v.video_id) || []);
     let availableVideos = videoPool.filter(v => !watchedIds.has(v.id));
     
-    // Strict Rotation: Deprioritize videos from the immediate previous cycle
     const previousVideoIds = new Set(state?.current_video_ids || []);
     let freshVideos = availableVideos.filter(v => !previousVideoIds.has(v.id));
     
-    // Fallback if dataset is too small
     if (freshVideos.length < 3) freshVideos = availableVideos;
     if (freshVideos.length < 3) freshVideos = videoPool;
     
@@ -98,18 +101,28 @@ export async function triggerRefreshIfNeeded() {
     const selectedVideoIds = shuffledVideos.slice(0, 3).map(v => v.id);
 
     // C. Persist to User State
-    const { error: upsertError } = await supabase
-      .from('user_rotation_state')
-      .upsert({
+    const payload = {
         user_id: userId,
         last_vocab_rotation_at: now.toISOString(),
         last_video_rotation_at: now.toISOString(),
         current_vocab_ids: selectedVocabIds,
         current_video_ids: selectedVideoIds
-      });
+    };
+
+    const { error: upsertError } = await supabase
+      .from('user_rotation_state')
+      .upsert(payload, { onConflict: 'user_id' });
 
     if (upsertError) {
-      console.error("RefreshService: Error updating user state", upsertError);
+      console.error("RefreshService: Error updating user state", {
+        message: upsertError.message,
+        details: upsertError.details,
+        hint: upsertError.hint,
+        code: upsertError.code,
+        payload
+      });
+    } else {
+      console.log("RefreshService: Successfully rotated content for user", userId);
     }
   }
 }
@@ -122,13 +135,13 @@ export async function getCurrentRotatedContent() {
   const { data: { session } } = await supabase.auth.getSession();
   if (!session) return null;
 
-  const { data: state } = await supabase
+  const { data: state, error } = await supabase
     .from('user_rotation_state')
     .select('current_vocab_ids, current_video_ids')
     .eq('user_id', session.user.id)
     .single();
 
-  if (!state) return null;
+  if (error || !state) return null;
 
   return {
     vocabularyIds: state.current_vocab_ids || [],
