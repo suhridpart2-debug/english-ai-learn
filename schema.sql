@@ -10,6 +10,10 @@ CREATE TABLE profiles (
   goal TEXT NOT NULL,
   native_language TEXT DEFAULT 'Hindi',
   daily_time INT NOT NULL,
+  plan TEXT DEFAULT 'free', -- 'free' or 'premium'
+  subscription_status TEXT DEFAULT 'inactive', -- 'active', 'inactive', 'expired'
+  subscription_start_date TIMESTAMPTZ,
+  subscription_end_date TIMESTAMPTZ,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -82,6 +86,7 @@ ALTER TABLE scores ENABLE ROW LEVEL SECURITY;
 ALTER TABLE mistakes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE vocabulary ENABLE ROW LEVEL SECURITY;
 ALTER TABLE roadmaps ENABLE ROW LEVEL SECURITY;
+ALTER TABLE payment_history ENABLE ROW LEVEL SECURITY;
 
 -- POLICIES: Users can only select/insert/update their own data
 CREATE POLICY "Users can view own profile" ON profiles FOR SELECT USING (auth.uid() = id);
@@ -117,3 +122,26 @@ CREATE POLICY "Users can update own vocabulary" ON vocabulary FOR UPDATE USING (
 CREATE POLICY "Users can view own roadmaps" ON roadmaps FOR SELECT USING (auth.uid() = user_id);
 CREATE POLICY "Users can insert own roadmaps" ON roadmaps FOR INSERT WITH CHECK (auth.uid() = user_id);
 CREATE POLICY "Users can update own roadmaps" ON roadmaps FOR UPDATE USING (auth.uid() = user_id);
+
+-- 8. Payment History Table
+CREATE TABLE payment_history (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  gateway TEXT DEFAULT 'razorpay',
+  gateway_order_id TEXT,
+  gateway_payment_id TEXT,
+  amount INT NOT NULL, -- in paise
+  currency TEXT DEFAULT 'INR',
+  status TEXT,
+  plan_name TEXT DEFAULT 'premium',
+  paid_at TIMESTAMPTZ DEFAULT NOW(),
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Enable RLS for new table
+ALTER TABLE payment_history ENABLE ROW LEVEL SECURITY;
+
+-- Policies for payment_history
+CREATE POLICY "Users can view own payment history" ON payment_history FOR SELECT USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can view own payment history" ON payment_history FOR SELECT USING (auth.uid() = user_id);

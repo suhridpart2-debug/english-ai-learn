@@ -7,6 +7,7 @@ import {
   Dumbbell,
   User,
   Clock,
+  CreditCard,
 } from "lucide-react";
 import { AuthGuard } from "@/components/layout/AuthGuard";
 import Link from "next/link";
@@ -66,6 +67,11 @@ export default function AppLayout({
                 href: "/profile",
                 icon: User,
                 label: "Profile",
+              },
+              {
+                href: "/billing",
+                icon: CreditCard,
+                label: "Billing",
               },
             ].map(({ href, icon: Icon, label }) => (
               <Link

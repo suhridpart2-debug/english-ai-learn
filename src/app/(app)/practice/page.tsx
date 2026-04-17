@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Card } from "@/components/ui/card";
-import { Mic, Timer, GraduationCap, Users, BookOpen } from "lucide-react";
+import { Mic, Timer, GraduationCap, Users, BookOpen, Briefcase, Sparkles } from "lucide-react";
 
 const practiceModes = [
   {
@@ -10,6 +10,15 @@ const practiceModes = [
     icon: Mic,
     color: "bg-indigo-100 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400",
     link: "/practice/read-aloud"
+  },
+  {
+    id: "ai-mock-interview",
+    title: "AI Mock Interview",
+    desc: "Serious, real-world interview prep for TCS, Amazon, & more. Get deep feedback.",
+    icon: Briefcase,
+    color: "bg-indigo-600 text-white shadow-lg shadow-indigo-600/30",
+    link: "/practice/interview",
+    isNew: true
   },
   {
     id: "conversation-buddy",
@@ -26,14 +35,6 @@ const practiceModes = [
     icon: Timer,
     color: "bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400",
     link: "/practice/sixty-seconds"
-  },
-  {
-    id: "roleplay",
-    title: "Real-life Roleplay",
-    desc: "Practice interviews, restaurant orders, and more.",
-    icon: Users,
-    color: "bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400",
-    link: "/practice/roleplay"
   },
   {
     id: "ielts",
@@ -54,7 +55,6 @@ const practiceModes = [
 ];
 
 export default function PracticeHubPage() {
-
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <header>
@@ -66,22 +66,33 @@ export default function PracticeHubPage() {
 
       <div className="grid md:grid-cols-2 gap-6 relative">
         {/* Subtle background glow */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-primary-500/10 rounded-full blur-[100px] -z-10 pointer-events-none" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-indigo-500/10 rounded-full blur-[100px] -z-10 pointer-events-none" />
 
         {practiceModes.map((mode) => {
           const Icon = mode.icon;
           return (
-            <Link key={mode.id} href={mode.link}>
-              <Card className="p-6 h-full hover:shadow-xl hover:-translate-y-1 transition-all border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-primary-200 dark:hover:border-primary-800 group">
+            <Link key={mode.id} href={mode.link} className={mode.id === 'ai-mock-interview' ? 'md:col-span-2' : ''}>
+              <Card className={`p-6 h-full hover:shadow-xl hover:-translate-y-1 transition-all border-slate-200 dark:border-slate-800 ${mode.id === 'ai-mock-interview' ? 'bg-gradient-to-br from-indigo-600 to-indigo-800 border-none' : 'bg-white dark:bg-slate-900'} group relative overflow-hidden`}>
+                {mode.id === 'ai-mock-interview' && (
+                  <div className="absolute -right-4 -top-4 w-32 h-32 bg-white/10 rounded-full blur-2xl group-hover:scale-150 transition-transform duration-700" />
+                )}
+                
                 <div className="flex items-start gap-4">
                   <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 transition-transform group-hover:scale-110 ${mode.color}`}>
                     <Icon className="w-7 h-7" />
                   </div>
-                  <div>
-                    <h3 className="text-xl font-bold font-display text-slate-900 dark:text-white mb-1 group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">
-                      {mode.title}
-                    </h3>
-                    <p className="text-slate-500 dark:text-slate-400 leading-relaxed">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <h3 className={`text-xl font-bold font-display ${mode.id === 'ai-mock-interview' ? 'text-white' : 'text-slate-900 dark:text-white'} group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors`}>
+                        {mode.title}
+                      </h3>
+                      {mode.id === 'ai-mock-interview' && (
+                        <span className="bg-white/20 text-white text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full flex items-center gap-1">
+                          <Sparkles className="w-3 h-3" /> New
+                        </span>
+                      )}
+                    </div>
+                    <p className={`leading-relaxed ${mode.id === 'ai-mock-interview' ? 'text-indigo-100' : 'text-slate-500 dark:text-slate-400'}`}>
                       {mode.desc}
                     </p>
                   </div>

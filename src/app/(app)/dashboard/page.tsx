@@ -33,6 +33,7 @@ import { DailyVideoWidget } from "@/components/video/DailyVideoWidget";
 import { triggerRefreshIfNeeded } from "@/lib/services/refreshContent";
 import { DailyVocabWidget } from "@/components/vocabulary/DailyVocabWidget";
 import { SavedContentWidget } from "@/components/dashboard/SavedContentWidget";
+import { isPremium } from "@/lib/services/subscriptionService";
 
 interface StatData {
   current_streak: number;
@@ -220,9 +221,18 @@ export default function DashboardPage() {
     <div className="mx-auto max-w-7xl space-y-8 p-6 text-slate-900 animate-in fade-in slide-in-from-bottom-4 duration-500 dark:text-white">
       <header className="flex items-center justify-between">
         <div>
-          <h1 className="font-display text-3xl font-bold text-slate-900 dark:text-white">
-            Hi, {profile?.name || "Student"} 👋
-          </h1>
+          <div className="flex items-center gap-3">
+            <h1 className="font-display text-3xl font-bold text-slate-900 dark:text-white">
+              Hi, {profile?.name || "Student"} 👋
+            </h1>
+            {isPremium(profile) && (
+              <Link href="/billing">
+                <span className="inline-flex items-center rounded-full bg-indigo-600 px-2.5 py-0.5 text-xs font-bold uppercase tracking-widest text-white shadow-lg shadow-indigo-200 dark:shadow-none">
+                  PRO
+                </span>
+              </Link>
+            )}
+          </div>
           <p className="text-slate-600 dark:text-slate-400">
             You've reached{" "}
             <span className="font-bold text-indigo-600 dark:text-indigo-400">
