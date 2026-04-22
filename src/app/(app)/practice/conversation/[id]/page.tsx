@@ -72,9 +72,6 @@ export default function ConversationRoom() {
     checkPremium();
   }, []);
 
-  const personaIndex = Object.values(PERSONAS).findIndex(p => p.id === personaId);
-  const isPremiumPersona = personaIndex >= 2;
-  const isPremiumScenario = !!scenarioId; // All guided scenarios except first 2? User said first 2 free.
 
   // Initialize Session
   useEffect(() => {

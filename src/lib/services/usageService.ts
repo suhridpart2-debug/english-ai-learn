@@ -103,3 +103,12 @@ export const UsageService = {
     }
   }
 };
+
+/**
+ * Client-side helper to fetch current usage from the API
+ */
+export async function fetchUsage(): Promise<UsageState> {
+  const res = await fetch('/api/usage/track');
+  if (!res.ok) throw new Error("Failed to fetch usage");
+  return res.json();
+}

@@ -1,6 +1,8 @@
+import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { isPremium } from "@/lib/services/subscriptionService";
 import { SUBSCRIPTION_CONFIG } from "@/lib/config/subscription";
+import { PERSONAS, PersonaId } from "@/lib/data/personas";
 
 export async function POST(req: Request) {
   try {

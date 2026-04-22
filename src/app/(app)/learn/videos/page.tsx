@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { ChevronLeft, History, Bookmark, Sparkles, Timer, PlayCircle, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { supabase } from "@/lib/supabaseClient";
 import { VideoService } from "@/lib/services/videoService";
 import { VideoLearningObject } from "@/lib/data/dailyVideos";
 import { VideoCard } from "@/components/video/VideoCard";
@@ -23,7 +24,6 @@ export default function VideoHubPage() {
     async function initData() {
       setLoading(true);
       try {
-        const supabase = VideoService.getSupabaseClient();
         const { data: { session } } = await supabase.auth.getSession();
         if (session) {
           const { data: profile } = await supabase.from('profiles').select('*').eq('id', session.user.id).single();
