@@ -126,6 +126,20 @@ export const getTodayRotatedWordsAsync = async (supabase: any): Promise<Vocabula
   }
 };
 
+// Helper to get a featured topic of the day deterministically
+export const getDailyTopic = (): typeof VOCABULARY_TOPICS[number] => {
+  const today = new Date();
+  let offset = 0;
+  
+  if (typeof window !== "undefined") {
+    offset = Number(localStorage.getItem("routine_offset_vocab") || "0");
+  }
+  
+  const baseIndex = today.getDate() + today.getMonth();
+  const index = (baseIndex + offset) % VOCABULARY_TOPICS.length;
+  return VOCABULARY_TOPICS[index];
+};
+
 // Get all words filtered by difficulty and/or topic
 export const getFilteredWords = (
   difficulty?: Difficulty | "All",
@@ -149,5 +163,26 @@ export const getFilteredWords = (
     );
   }
 
+  return result;
+};
+
+// Helper to shuffle an array deterministically based on a seed
+export const getDailyShuffledWords = (words: VocabularyWord[]): VocabularyWord[] => {
+  const today = new Date();
+  let offset = 0;
+  
+  if (typeof window !== "undefined") {
+    offset = Number(localStorage.getItem("routine_offset_vocab") || "0");
+  }
+  
+  const seed = today.getDate() + today.getMonth() + offset;
+  const result = [...words];
+  
+  // Simple LCG or seeded shuffle
+  for (let i = result.length - 1; i > 0; i--) {
+    const j = (seed * (i + 1)) % (i + 1);
+    [result[i], result[j]] = [result[j], result[i]];
+  }
+  
   return result;
 };

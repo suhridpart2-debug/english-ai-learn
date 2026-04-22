@@ -9,7 +9,9 @@ import { VideoService } from "@/lib/services/videoService";
 import { VideoLearningObject } from "@/lib/data/dailyVideos";
 import { VideoCard } from "./VideoCard";
 
-export function DailyVideoWidget() {
+import { LockedCard } from "@/components/usage/LockedCard";
+
+export function DailyVideoWidget({ isPremium }: { isPremium: boolean }) {
   const [videos, setVideos] = useState<VideoLearningObject[]>([]);
   const [progress, setProgress] = useState<Record<string, any>>({});
   const [timeLeft, setTimeLeft] = useState("");
@@ -67,22 +69,46 @@ export function DailyVideoWidget() {
           </div>
           <h2 className="text-xl font-display font-bold text-slate-900 dark:text-white">Daily English Videos</h2>
         </div>
-        <div className="flex items-center gap-2 px-3 py-1 bg-slate-100 dark:bg-slate-900 rounded-full text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-           <Timer className="w-3 h-3" />
-           Next refresh: <span className="text-primary-600 dark:text-primary-400 tabular-nums">{timeLeft}</span>
+        <div className="flex items-center gap-3">
+          {!isPremium && (
+            <span className="text-[10px] font-bold bg-amber-100 dark:bg-amber-900/30 text-amber-600 px-2 py-1 rounded-full uppercase tracking-widest whitespace-nowrap">
+              Premium Limited
+            </span>
+          )}
+          <div className="flex items-center gap-2 px-3 py-1 bg-slate-100 dark:bg-slate-900 rounded-full text-[10px] font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap">
+             <Timer className="w-3 h-3" />
+             Next refresh: <span className="text-primary-600 dark:text-primary-400 tabular-nums">{timeLeft}</span>
+          </div>
         </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {videos.map((video) => (
-          <VideoCard 
-            key={video.id} 
-            video={video} 
-            isWatched={progress[video.id]?.watched}
-            isSaved={progress[video.id]?.saved}
-            progress={progress[video.id]?.progress_seconds}
-          />
-        ))}
+        {videos.map((video, index) => {
+          const isLocked = !isPremium && index >= 1;
+          const card = (
+            <VideoCard 
+              key={video.id} 
+              video={video} 
+              isWatched={progress[video.id]?.watched}
+              isSaved={progress[video.id]?.saved}
+              progress={progress[video.id]?.progress_seconds}
+            />
+          );
+
+          if (isLocked) {
+            return (
+              <LockedCard 
+                key={video.id} 
+                title="Expert Content" 
+                description="Upgrade to watch all curated daily videos"
+              >
+                {card}
+              </LockedCard>
+            );
+          }
+
+          return card;
+        })}
       </div>
 
       <div className="flex justify-center pt-2">

@@ -8,8 +8,12 @@ import { PERSONAS, PersonaId, Persona } from "@/lib/data/personas";
 import { useRouter } from "next/navigation";
 import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sparkles, ArrowRight } from "lucide-react";
+import { Sparkles, ArrowRight, Lock } from "lucide-react";
 import { CONVERSATION_SCENARIOS, getRotatedScenarios } from "@/lib/data/conversationScenarios";
+import { supabase } from "@/lib/supabaseClient";
+import { isPremium } from "@/lib/services/subscriptionService";
+import { useEffect } from "react";
+import { LockedCard } from "@/components/usage/LockedCard";
 
 export default function PersonaSelectionPage() {
   const router = useRouter();
@@ -17,6 +21,17 @@ export default function PersonaSelectionPage() {
   const [duration, setDuration] = useState<number>(5);
   const [isStarting, setIsStarting] = useState(false);
   const [rotatedScenarios] = useState(() => getRotatedScenarios(6));
+  const [premium, setPremium] = useState(false);
+
+  useEffect(() => {
+    async function checkPremium() {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+      const { data: profile } = await supabase.from('profiles').select('*').eq('id', session.user.id).single();
+      setPremium(isPremium(profile));
+    }
+    checkPremium();
+  }, []);
 
   const icons: Record<string, React.ReactNode> = {
     GraduationCap: <GraduationCap className="w-6 h-6" />,
@@ -100,35 +115,57 @@ export default function PersonaSelectionPage() {
             exit={{ opacity: 0, y: -10 }}
             className="grid md:grid-cols-2 lg:grid-cols-3 gap-6"
           >
-            {Object.values(PERSONAS).map((persona) => (
-              <Card 
-                key={persona.id} 
-                className="group p-6 border-slate-200 dark:border-slate-800 hover:border-primary-300 dark:hover:border-primary-800 
-                           transition-all hover:shadow-xl cursor-pointer flex flex-col justify-between overflow-hidden relative"
-                onClick={() => handleStartBuddy(persona.id)}
-              >
-                <div className="absolute top-0 right-0 w-24 h-24 bg-primary-500/5 rounded-full -mr-8 -mt-8 transition-transform group-hover:scale-150" />
-                
-                <div>
-                  <div className={`w-12 h-12 rounded-xl flex items-center justify-center mb-4 ${persona.color}`}>
-                    {icons[persona.icon] || <MessageSquare className="w-6 h-6" />}
+            {Object.values(PERSONAS).map((persona, index) => {
+              const isLocked = !premium && index >= 2;
+              
+              if (isLocked) {
+                return (
+                  <LockedCard 
+                    key={persona.id} 
+                    title="Expert Coach" 
+                    description="Unlock specialized AI personas for advanced practice"
+                  >
+                    <Card className="p-6 opacity-40 grayscale pointer-events-none">
+                      <div className={`w-12 h-12 rounded-xl flex items-center justify-center mb-4 ${persona.color}`}>
+                        {icons[persona.icon] || <MessageSquare className="w-6 h-6" />}
+                      </div>
+                      <h3 className="text-xl font-bold font-display text-slate-900 dark:text-white mb-1">{persona.name}</h3>
+                      <p className="text-xs font-bold text-primary-600 dark:text-primary-400 mb-3 uppercase">{persona.role}</p>
+                    </Card>
+                  </LockedCard>
+                );
+              }
+
+              return (
+                <Card 
+                  key={persona.id} 
+                  className="group p-6 border-slate-200 dark:border-slate-800 hover:border-primary-300 dark:hover:border-primary-800 
+                             transition-all hover:shadow-xl cursor-pointer flex flex-col justify-between overflow-hidden relative"
+                  onClick={() => handleStartBuddy(persona.id)}
+                >
+                  <div className="absolute top-0 right-0 w-24 h-24 bg-primary-500/5 rounded-full -mr-8 -mt-8 transition-transform group-hover:scale-150" />
+                  
+                  <div>
+                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center mb-4 ${persona.color}`}>
+                      {icons[persona.icon] || <MessageSquare className="w-6 h-6" />}
+                    </div>
+                    <h3 className="text-xl font-bold font-display text-slate-900 dark:text-white mb-1">
+                      {persona.name}
+                    </h3>
+                    <p className="text-xs font-bold text-primary-600 dark:text-primary-400 mb-3 uppercase tracking-widest">
+                      {persona.role}
+                    </p>
+                    <p className="text-slate-500 dark:text-slate-400 text-sm leading-relaxed mb-6">
+                      {persona.description}
+                    </p>
                   </div>
-                  <h3 className="text-xl font-bold font-display text-slate-900 dark:text-white mb-1">
-                    {persona.name}
-                  </h3>
-                  <p className="text-xs font-bold text-primary-600 dark:text-primary-400 mb-3 uppercase tracking-widest">
-                    {persona.role}
-                  </p>
-                  <p className="text-slate-500 dark:text-slate-400 text-sm leading-relaxed mb-6">
-                    {persona.description}
-                  </p>
-                </div>
-                
-                <Button className="w-full font-bold shadow-md group-hover:bg-primary-700" disabled={isStarting}>
-                   Chat with {persona.name}
-                </Button>
-              </Card>
-            ))}
+                  
+                  <Button className="w-full font-bold shadow-md group-hover:bg-primary-700" disabled={isStarting}>
+                     Chat with {persona.name}
+                  </Button>
+                </Card>
+              );
+            })}
           </motion.div>
         ) : (
           <motion.div 
@@ -147,40 +184,59 @@ export default function PersonaSelectionPage() {
             </div>
 
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-               {rotatedScenarios.map((scenario) => (
-                 <Card 
-                   key={scenario.id} 
-                   className="p-5 border-slate-200 dark:border-slate-800 hover:border-indigo-400 dark:hover:border-indigo-900 transition-all hover:shadow-lg cursor-pointer flex flex-col group"
-                   onClick={() => handleStartScenario(scenario.id)}
-                 >
-                    <div className="flex items-center justify-between mb-4">
-                       <span className="text-[10px] font-black uppercase tracking-widest px-2 py-1 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-md">
-                          {scenario.category}
-                       </span>
-                       <span className={`text-[10px] font-bold px-2 py-1 rounded-md ${
-                         scenario.suggestedLevel === 'Beginner' ? 'bg-emerald-50 text-emerald-600' :
-                         scenario.suggestedLevel === 'Intermediate' ? 'bg-amber-50 text-amber-600' :
-                         'bg-rose-50 text-rose-600'
-                       }`}>
-                         {scenario.suggestedLevel}
-                       </span>
-                    </div>
-                    <h4 className="font-bold text-slate-900 dark:text-white mb-2 group-hover:text-indigo-600 transition-colors">
-                       {scenario.title}
-                    </h4>
-                    <p className="text-xs text-slate-500 mb-6 flex-1">
-                       {scenario.description}
-                    </p>
-                    <div className="flex items-center justify-between text-[10px] font-bold text-slate-400 uppercase tracking-tighter pt-4 border-t border-slate-50 dark:border-slate-900/50">
-                       <div className="flex flex-col">
-                          <span>AI: {scenario.aiRole}</span>
-                       </div>
-                       <Button size="sm" variant="ghost" className="h-7 text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 px-2 rounded-lg">
-                          Start <ArrowRight className="w-3 h-3 ml-1" />
-                       </Button>
-                    </div>
-                 </Card>
-               ))}
+               {rotatedScenarios.map((scenario, index) => {
+                 const isLocked = !premium && index >= 2;
+
+                 if (isLocked) {
+                   return (
+                     <LockedCard 
+                       key={scenario.id} 
+                       title="Premium Scenario" 
+                       description="Unlock real-world guided situations"
+                     >
+                        <Card className="p-5 opacity-40 grayscale h-full">
+                           <h4 className="font-bold text-slate-900 dark:text-white mb-2">{scenario.title}</h4>
+                           <p className="text-xs text-slate-500 mb-6">{scenario.description}</p>
+                        </Card>
+                     </LockedCard>
+                   );
+                 }
+
+                 return (
+                   <Card 
+                     key={scenario.id} 
+                     className="p-5 border-slate-200 dark:border-slate-800 hover:border-indigo-400 dark:hover:border-indigo-900 transition-all hover:shadow-lg cursor-pointer flex flex-col group"
+                     onClick={() => handleStartScenario(scenario.id)}
+                   >
+                      <div className="flex items-center justify-between mb-4">
+                         <span className="text-[10px] font-black uppercase tracking-widest px-2 py-1 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-md">
+                            {scenario.category}
+                         </span>
+                         <span className={`text-[10px] font-bold px-2 py-1 rounded-md ${
+                           scenario.suggestedLevel === 'Beginner' ? 'bg-emerald-50 text-emerald-600' :
+                           scenario.suggestedLevel === 'Intermediate' ? 'bg-amber-50 text-amber-600' :
+                           'bg-rose-50 text-rose-600'
+                         }`}>
+                           {scenario.suggestedLevel}
+                         </span>
+                      </div>
+                      <h4 className="font-bold text-slate-900 dark:text-white mb-2 group-hover:text-indigo-600 transition-colors">
+                         {scenario.title}
+                      </h4>
+                      <p className="text-xs text-slate-500 mb-6 flex-1">
+                         {scenario.description}
+                      </p>
+                      <div className="flex items-center justify-between text-[10px] font-bold text-slate-400 uppercase tracking-tighter pt-4 border-t border-slate-50 dark:border-slate-900/50">
+                         <div className="flex flex-col">
+                            <span>AI: {scenario.aiRole}</span>
+                         </div>
+                         <Button size="sm" variant="ghost" className="h-7 text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 px-2 rounded-lg">
+                            Start <ArrowRight className="w-3 h-3 ml-1" />
+                         </Button>
+                      </div>
+                   </Card>
+                 );
+               })}
             </div>
 
             <div className="pt-8 border-t border-slate-100 dark:border-slate-900">

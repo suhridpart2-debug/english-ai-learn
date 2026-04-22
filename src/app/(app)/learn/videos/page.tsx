@@ -8,6 +8,8 @@ import { VideoService } from "@/lib/services/videoService";
 import { VideoLearningObject } from "@/lib/data/dailyVideos";
 import { VideoCard } from "@/components/video/VideoCard";
 import { Card } from "@/components/ui/card";
+import { isPremium } from "@/lib/services/subscriptionService";
+import { LockedCard } from "@/components/usage/LockedCard";
 
 export default function VideoHubPage() {
   const [dailyVideos, setDailyVideos] = useState<VideoLearningObject[]>([]);
@@ -15,11 +17,19 @@ export default function VideoHubPage() {
   const [progress, setProgress] = useState<Record<string, any>>({});
   const [loading, setLoading] = useState(true);
   const [timeLeft, setTimeLeft] = useState("");
+  const [premium, setPremium] = useState(false);
 
   useEffect(() => {
     async function initData() {
       setLoading(true);
       try {
+        const supabase = VideoService.getSupabaseClient();
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+          const { data: profile } = await supabase.from('profiles').select('*').eq('id', session.user.id).single();
+          setPremium(isPremium(profile));
+        }
+
         const [daily, all] = await Promise.all([
           VideoService.getDailyVideosAsync(),
           VideoService.getAllVideosAsync()
@@ -92,15 +102,32 @@ export default function VideoHubPage() {
           </div>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {dailyVideos.length > 0 ? dailyVideos.map(video => (
-            <VideoCard 
-              key={video.id} 
-              video={video} 
-              isWatched={progress[video.id]?.watched}
-              isSaved={progress[video.id]?.saved}
-              progress={progress[video.id]?.progress_seconds}
-            />
-          )) : (
+          {dailyVideos.length > 0 ? dailyVideos.map((video, index) => {
+            const isLocked = !premium && index > 0;
+            const card = (
+              <VideoCard 
+                key={video.id} 
+                video={video} 
+                isWatched={progress[video.id]?.watched}
+                isSaved={progress[video.id]?.saved}
+                progress={progress[video.id]?.progress_seconds}
+              />
+            );
+
+            if (isLocked) {
+              return (
+                <LockedCard 
+                  key={video.id} 
+                  title="Premium Content" 
+                  description="Free users get 1 curated video every 24 hours. Upgrade for unlimited access."
+                >
+                  {card}
+                </LockedCard>
+              );
+            }
+
+            return card;
+          }) : (
             <div className="col-span-3 py-12 text-center border-2 border-dashed border-slate-100 rounded-2xl">
               <p className="text-slate-400">No featured videos found for today yet.</p>
             </div>

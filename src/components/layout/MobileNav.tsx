@@ -2,9 +2,9 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Mic, BookOpen, User, LayoutDashboard, Clock, MessageSquareText } from "lucide-react";
+import { Mic, BookOpen, User, LayoutDashboard, Clock, MessageSquareText, ShieldAlert } from "lucide-react";
 
-export function MobileNav() {
+export function MobileNav({ isAdmin = false }: { isAdmin?: boolean }) {
   const pathname = usePathname();
 
   const links = [
@@ -12,7 +12,7 @@ export function MobileNav() {
     { href: "/learn", icon: BookOpen, label: "Learn" },
     { href: "/practice", icon: Mic, label: "Practice", isMain: true },
     { href: "/practice/conversation", icon: MessageSquareText, label: "AI Chat" },
-    { href: "/profile", icon: User, label: "Profile" },
+    { href: isAdmin ? "/admin" : "/profile", icon: isAdmin ? ShieldAlert : User, label: isAdmin ? "Admin" : "Profile" },
   ];
 
   return (

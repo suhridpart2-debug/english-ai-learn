@@ -1,12 +1,32 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { BookOpen, Languages, ArrowRight, GraduationCap, Star, Play } from "lucide-react";
 import Link from "next/link";
 import { VOCABULARY_DATA, VOCABULARY_TOPICS } from "@/lib/data/vocabularyData";
 import { GRAMMAR_TOPICS } from "@/lib/data/grammarData";
+import { createClient } from "@/lib/supabase/client";
+import { isPremium } from "@/lib/services/subscriptionService";
+import { LockedCard } from "@/components/usage/LockedCard";
 
 export default function LearnHub() {
+  const [premium, setPremium] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const checkPremium = async () => {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).single();
+        setPremium(isPremium(profile));
+      }
+      setLoading(false);
+    };
+    checkPremium();
+  }, []);
+
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-8 pb-32 md:pb-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <header>
@@ -69,34 +89,40 @@ export default function LearnHub() {
 
       {/* Daily Video Section */}
       <section className="animate-in fade-in slide-in-from-bottom-4 duration-700 delay-150">
-        <Link href="/learn/videos" className="block group">
-          <Card className="overflow-hidden bg-gradient-to-br from-orange-500 to-red-600 text-white relative border-none shadow-xl shadow-orange-900/20 p-6 md:p-8 hover:scale-[1.01] transition-transform">
-            <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-[80px]" />
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
-              <div className="flex-1">
-                <div className="w-14 h-14 bg-white/20 rounded-2xl flex items-center justify-center mb-6 backdrop-blur-sm">
-                  <Play className="w-7 h-7 text-white" />
+        <div className="block group relative">
+          {!premium ? (
+            <LockedCard title="Pro English Videos" description="Watch unlimited curated daily videos">
+              <Card className="overflow-hidden bg-gradient-to-br from-orange-500 to-red-600 text-white relative border-none p-6 md:p-8">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+                  <div className="flex-1">
+                    <h2 className="text-2xl font-display font-bold mb-2">Daily English Videos</h2>
+                    <p className="text-orange-50 mb-3 max-w-xl">Improve listening and vocabulary with real-world content.</p>
+                  </div>
                 </div>
-                <h2 className="text-2xl font-display font-bold mb-2">Daily English Videos</h2>
-                <p className="text-orange-50 mb-3 max-w-xl">
-                  New curated content every 6 hours. Improve listening, learn real-world vocabulary, and start speaking practice immediately.
-                </p>
-                <div className="flex items-center text-sm font-bold bg-white/20 w-fit px-4 py-2 rounded-full backdrop-blur-sm group-hover:bg-white group-hover:text-orange-700 transition-colors">
-                  Watch Daily Videos <ArrowRight className="w-4 h-4 ml-2" />
+              </Card>
+            </LockedCard>
+          ) : (
+            <Link href="/learn/videos">
+              <Card className="overflow-hidden bg-gradient-to-br from-orange-500 to-red-600 text-white relative border-none shadow-xl shadow-orange-900/20 p-6 md:p-8 hover:scale-[1.01] transition-transform">
+                <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-[80px]" />
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
+                  <div className="flex-1">
+                    <div className="w-14 h-14 bg-white/20 rounded-2xl flex items-center justify-center mb-6 backdrop-blur-sm">
+                      <Play className="w-7 h-7 text-white" />
+                    </div>
+                    <h2 className="text-2xl font-display font-bold mb-2">Daily English Videos</h2>
+                    <p className="text-orange-50 mb-3 max-w-xl">
+                      New curated content every 6 hours. Improve listening, learn real-world vocabulary, and start speaking practice immediately.
+                    </p>
+                    <div className="flex items-center text-sm font-bold bg-white/20 w-fit px-4 py-2 rounded-full backdrop-blur-sm group-hover:bg-white group-hover:text-orange-700 transition-colors">
+                      Watch Daily Videos <ArrowRight className="w-4 h-4 ml-2" />
+                    </div>
+                  </div>
                 </div>
-              </div>
-              <div className="flex gap-4 overflow-hidden mask-fade-right md:w-1/2">
-                 <div className="flex gap-3 animate-marquee">
-                    {[1,2,3].map(i => (
-                       <div key={i} className="w-40 aspect-video bg-white/10 rounded-xl border border-white/20 flex items-center justify-center shrink-0">
-                          <Play className="w-6 h-6 text-white/40" />
-                       </div>
-                    ))}
-                 </div>
-              </div>
-            </div>
-          </Card>
-        </Link>
+              </Card>
+            </Link>
+          )}
+        </div>
       </section>
 
       {/* Quick access: Grammar Topics */}
@@ -109,23 +135,46 @@ export default function LearnHub() {
             View all <ArrowRight className="w-3 h-3" />
           </Link>
         </div>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-          {GRAMMAR_TOPICS.slice(0, 8).map(topic => (
-            <Link key={topic.slug} href={`/grammar/topic/${topic.slug}`}>
-              <Card className="p-4 hover:border-emerald-300 dark:hover:border-emerald-800 transition-all cursor-pointer group">
-                <div className="flex items-center justify-between mb-2">
-                  <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full 
-                    ${topic.difficulty === 'Beginner' ? 'bg-green-100 text-green-700' : 
-                      topic.difficulty === 'Intermediate' ? 'bg-amber-100 text-amber-700' : 
-                      'bg-red-100 text-red-700'}`}>
-                    {topic.difficulty}
-                  </span>
-                  <ArrowRight className="w-3 h-3 text-slate-300 group-hover:text-emerald-500 group-hover:translate-x-0.5 transition-all" />
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          {GRAMMAR_TOPICS.slice(0, 8).map((topic, i) => {
+            const isLocked = !premium && i >= 2; 
+
+            const content = (
+              <Card className={`p-4 h-[160px] flex flex-col justify-between transition-all border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm ${isLocked ? 'opacity-40 grayscale' : 'hover:border-emerald-300 dark:hover:border-emerald-800 cursor-pointer group'}`}>
+                <div>
+                   <div className="flex items-center justify-between mb-2">
+                     <span className={`text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md 
+                       ${topic.difficulty === 'Beginner' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 
+                         topic.difficulty === 'Intermediate' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' : 
+                         'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'}`}>
+                       {topic.difficulty}
+                     </span>
+                     {!isLocked && <ArrowRight className="w-3 h-3 text-slate-300 group-hover:text-emerald-500 group-hover:translate-x-0.5 transition-all" />}
+                   </div>
+                   <p className="text-sm font-bold text-slate-900 dark:text-white line-clamp-2 leading-snug">{topic.title}</p>
                 </div>
-                <p className="text-sm font-semibold text-slate-800 dark:text-slate-200 line-clamp-2">{topic.title}</p>
               </Card>
-            </Link>
-          ))}
+            );
+
+            if (isLocked) {
+              return (
+                <LockedCard 
+                  key={topic.slug} 
+                  title="Pro Module" 
+                  description="Unlock full grammar coach"
+                  className="h-[160px]"
+                >
+                  {content}
+                </LockedCard>
+              );
+            }
+
+            return (
+              <Link key={topic.slug} href={`/grammar/topic/${topic.slug}`}>
+                {content}
+              </Link>
+            );
+          })}
         </div>
       </section>
 
@@ -139,19 +188,39 @@ export default function LearnHub() {
             View all <ArrowRight className="w-3 h-3" />
           </Link>
         </div>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          {VOCABULARY_TOPICS.map(topic => {
-            const count = VOCABULARY_DATA.filter(w => w.topic === topic.slug).length;
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {VOCABULARY_TOPICS.slice(0, 8).map((topic, i) => {
+            const isLocked = !premium && i >= 4; 
+
+            const content = (
+              <Card className={`p-4 h-[160px] flex flex-col justify-between transition-all border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm ${isLocked ? 'opacity-40 grayscale' : 'hover:border-indigo-300 dark:hover:border-indigo-800 cursor-pointer group'}`}>
+                 <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Vocabulary</span>
+                      {!isLocked && <ArrowRight className="w-3 h-3 text-slate-300 group-hover:text-indigo-500 transition-colors" />}
+                    </div>
+                    <p className="text-sm font-black text-slate-900 dark:text-white line-clamp-1">{topic.name}</p>
+                    <p className="text-[11px] text-slate-500 mt-1 line-clamp-2 leading-tight">{topic.description}</p>
+                 </div>
+              </Card>
+            );
+
+            if (isLocked) {
+              return (
+                <LockedCard 
+                  key={topic.slug} 
+                  title="Expert Set" 
+                  description="Unlock 20+ specialized topics"
+                  className="h-[160px]"
+                >
+                  {content}
+                </LockedCard>
+              );
+            }
+
             return (
               <Link key={topic.slug} href={`/vocabulary/topic/${topic.slug}`}>
-                <Card className="p-4 hover:border-indigo-300 dark:hover:border-indigo-800 transition-all cursor-pointer group">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs text-slate-400 font-medium">{count} words</span>
-                    <ArrowRight className="w-3 h-3 text-slate-300 group-hover:text-indigo-500 transition-colors" />
-                  </div>
-                  <p className="text-sm font-bold text-slate-800 dark:text-slate-200">{topic.name}</p>
-                  <p className="text-xs text-slate-500 mt-1 line-clamp-1">{topic.description}</p>
-                </Card>
+                {content}
               </Link>
             );
           })}

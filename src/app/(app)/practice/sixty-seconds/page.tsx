@@ -1,14 +1,15 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Mic, StopCircle, RefreshCw, ChevronLeft, Volume2 } from "lucide-react";
+import { Mic, StopCircle, RefreshCw, ChevronLeft, Volume2, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { mockSpeechToText } from "@/lib/ai/speechToText";
 import { analyzeSpeech, type AnalysisReport } from "@/lib/ai/analysisEngine";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/lib/supabaseClient";
+import { SPEAKING_TOPICS } from "@/lib/data/topicData";
 
 export default function SixtySecondChallenge() {
   const [isRecording, setIsRecording] = useState(false);
@@ -16,11 +17,24 @@ export default function SixtySecondChallenge() {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [report, setReport] = useState<AnalysisReport | null>(null);
   const [userText, setUserText] = useState("");
+  const [currentTopic, setCurrentTopic] = useState(SPEAKING_TOPICS[0]);
 
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<BlobPart[]>([]);
-  const topic = "Describe a memorable journey you have taken.";
+  
+  const refreshTopic = () => {
+    const randomIndex = Math.floor(Math.random() * SPEAKING_TOPICS.length);
+    setCurrentTopic(SPEAKING_TOPICS[randomIndex]);
+    setReport(null);
+    setUserText("");
+    setTimeLeft(60);
+  };
+
+  // Pick a random topic on mount
+  useEffect(() => {
+    refreshTopic();
+  }, []);
 
   // Handle timer
   useEffect(() => {
@@ -116,7 +130,7 @@ export default function SixtySecondChallenge() {
         const { data: sessionData } = await supabase.from('sessions').insert({
           user_id: session.user.id,
           mode: '60-Second Challenge',
-          topic,
+          topic: currentTopic.topic,
           duration_seconds: 60 - Math.max(0, timeLeft),
           transcript: stt.text
         }).select('id').single();
@@ -171,13 +185,30 @@ export default function SixtySecondChallenge() {
         <div>
           <h1 className="text-2xl font-display font-bold text-slate-900 dark:text-white">60-Second Challenge</h1>
         </div>
+        <div className="ml-auto">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={refreshTopic}
+            className="rounded-full bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:text-primary-600 dark:hover:text-primary-400 gap-2"
+          >
+            <RefreshCw className="w-4 h-4" />
+            New Topic
+          </Button>
+        </div>
       </header>
 
       {/* Main Topic Area */}
-      <Card className="p-8 text-center bg-gradient-to-br from-indigo-50 to-primary-50 dark:from-indigo-950/20 dark:to-primary-950/20 border-primary-100 dark:border-primary-900/50">
-        <p className="text-sm font-bold text-primary-600 dark:text-primary-400 uppercase tracking-widest mb-4">Topic</p>
-        <h2 className="text-2xl md:text-4xl font-display font-bold text-slate-900 dark:text-white leading-tight">
-          "{topic}"
+      <Card className="p-8 text-center bg-gradient-to-br from-indigo-50 to-primary-50 dark:from-indigo-950/20 dark:to-primary-950/20 border-primary-100 dark:border-primary-900/50 relative overflow-hidden">
+        <div className="absolute top-0 right-0 p-3 opacity-10">
+          <Sparkles className="w-12 h-12 text-primary-600" />
+        </div>
+        <p className="text-sm font-bold text-primary-600 dark:text-primary-400 uppercase tracking-widest mb-4 flex items-center justify-center gap-2">
+          <small className="px-2 py-0.5 rounded bg-primary-100 dark:bg-primary-900/30 text-[10px] font-black uppercase tracking-tighter">AI Curated</small>
+          {currentTopic.category}
+        </p>
+        <h2 className="text-2xl md:text-3xl font-display font-bold text-slate-900 dark:text-white leading-tight">
+          "{currentTopic.topic}"
         </h2>
       </Card>
 
@@ -308,8 +339,8 @@ export default function SixtySecondChallenge() {
             </Card>
 
             <div className="flex justify-center pt-8">
-               <Button size="lg" className="rounded-full shadow-lg" onClick={startRecording}>
-                 <RefreshCw className="w-5 h-5 mr-2" /> Try Another Topic
+               <Button size="lg" className="rounded-full shadow-lg" onClick={refreshTopic}>
+                 <RefreshCw className="w-5 h-5 mr-2" /> Next Challenge
                </Button>
             </div>
           </motion.div>

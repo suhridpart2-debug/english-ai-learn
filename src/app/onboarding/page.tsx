@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -30,6 +30,8 @@ export default function OnboardingFlow() {
 
   const [step, setStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
 
   const [name, setName] = useState("");
   const [level, setLevel] = useState("");
@@ -39,11 +41,27 @@ export default function OnboardingFlow() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
+  // Check if user is already authenticated (Google/OAuth case)
+  useEffect(() => {
+    async function checkAuth() {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        setIsAuthenticated(true);
+        const metadata = session.user.user_metadata;
+        setName(metadata.full_name || metadata.name || "");
+        setEmail(session.user.email || "");
+      }
+      setIsCheckingAuth(false);
+    }
+    checkAuth();
+  }, []);
+
   const isNextDisabled = () => {
     if (step === 1) return name.trim().length === 0;
     if (step === 2) return !level;
     if (step === 3) return !goal;
     if (step === 4) {
+      if (isAuthenticated) return false; // Authenticated users don't need to fill email/pass
       return (
         !email.trim() ||
         !password.trim() ||
@@ -54,86 +72,111 @@ export default function OnboardingFlow() {
   };
 
   const handleNext = async () => {
-    if (step < 4) {
+    // If authenticated, we skip the final login step if it was purely for account creation
+    if (step < 3 || (!isAuthenticated && step === 3)) {
       setStep((prev) => prev + 1);
       return;
     }
 
-    if (!name.trim() || !level || !goal || !email.trim() || !password.trim()) {
-      alert("Please fill all required fields.");
-      return;
-    }
-
-    if (password.trim().length < 6) {
-      alert("Password must be at least 6 characters.");
-      return;
+    // Validation for authenticated flow
+    if (isAuthenticated) {
+      if (!name.trim() || !level || !goal) {
+        alert("Please fill all required fields.");
+        return;
+      }
+    } else {
+      // Validation for signup flow
+      if (!name.trim() || !level || !goal || !email.trim() || !password.trim()) {
+        alert("Please fill all required fields.");
+        return;
+      }
     }
 
     setIsLoading(true);
 
     try {
-      const cleanEmail = email.trim().toLowerCase();
-
-      const { data, error } = await supabase.auth.signUp({
-        email: cleanEmail,
-        password: password.trim(),
-        options: {
-          data: {
-            name: name.trim(),
-            level,
+      if (isAuthenticated) {
+        // FLOW A: Finish setup for Google/Existing users
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          // Update database profile
+          await supabase.from('profiles').upsert({
+            id: user.id,
+            name: name.trim(), // Legacy field
+            full_name: name.trim(), // New field
+            level: level, // Legacy field
+            english_level: level, // New field
             goal,
-            nativeLanguage: "Hindi",
-            dailyTime,
-          },
-        },
-      });
+            onboarding_completed: true, 
+            email: user.email,
+            provider: user.app_metadata.provider,
+            daily_time: dailyTime,
+            updated_at: new Date().toISOString()
+          });
 
-      if (error) {
-        if (
-          error.message?.toLowerCase().includes("supabaseurl is required") ||
-          error.message?.toLowerCase().includes("url is required")
-        ) {
-          alert("Supabase environment variables are missing. Please check your .env.local file.");
-          return;
+          // UPDATE AUTH METADATA for middleware efficiency
+          await supabase.auth.updateUser({
+            data: { onboarding_completed: true }
+          });
+
+          // Initialize streaks if needed
+          await supabase.from('streaks').upsert({
+            user_id: user.id,
+            current_streak: 0,
+            longest_streak: 0,
+            total_sessions: 0
+          }, { onConflict: 'user_id' });
         }
-
-        alert(error.message);
-        return;
-      }
-
-      if (data.user) {
-        // Create the custom profile record
-        await supabase.from('profiles').upsert({
-          id: data.user.id,
-          name: name.trim(),
-          level,
-          goal,
-          native_language: "Hindi",
-          daily_time: dailyTime
+      } else {
+        // FLOW B: Create new email account
+        const cleanEmail = email.trim().toLowerCase();
+        const { data, error } = await supabase.auth.signUp({
+          email: cleanEmail,
+          password: password.trim(),
+          options: {
+            data: {
+              name: name.trim(),
+              full_name: name.trim(),
+              level,
+              english_level: level,
+              goal,
+              onboarding_completed: true,
+              dailyTime,
+            },
+          },
         });
 
-        // Initialize user streaks schema record
-        await supabase.from('streaks').upsert({
-          user_id: data.user.id,
-          current_streak: 0,
-          longest_streak: 0,
-          total_sessions: 0
-        });
+        if (error) throw error;
+
+        if (data.user) {
+          await supabase.from('profiles').upsert({
+            id: data.user.id,
+            name: name.trim(), // Legacy field
+            full_name: name.trim(), // New field
+            level: level, // Legacy field
+            english_level: level, // New field
+            goal,
+            onboarding_completed: true,
+            email: cleanEmail,
+            provider: 'email',
+            daily_time: dailyTime
+          });
+
+          await supabase.from('streaks').upsert({
+            user_id: data.user.id,
+            current_streak: 0,
+            longest_streak: 0,
+            total_sessions: 0
+          });
+        }
       }
 
       completeOnboarding();
-
-      if (data.user && !data.session) {
-        alert("Account created successfully. Please verify your email, then log in.");
-        router.push("/auth/login?redirect=/dashboard");
-        return;
-      }
-
-      alert("Account created successfully.");
+      router.refresh(); // Force a refresh to update session metadata for middleware
       router.push("/dashboard");
-    } catch (err) {
-      console.error("Signup error:", err);
-      alert("Something went wrong while creating your account.");
+    } catch (err: any) {
+      console.error("Setup error:", err);
+      alert(err.message || "Something went wrong while setting up your profile.");
     } finally {
       setIsLoading(false);
     }
@@ -154,7 +197,7 @@ export default function OnboardingFlow() {
           <motion.div
             className="bg-primary-500 h-full rounded-full"
             initial={{ width: 0 }}
-            animate={{ width: `${(step / 4) * 100}%` }}
+            animate={{ width: `${(step / (isAuthenticated ? 3 : 4)) * 100}%` }}
             transition={{ duration: 0.5 }}
           />
         </div>
@@ -249,11 +292,29 @@ export default function OnboardingFlow() {
                     </button>
                   ))}
                 </div>
+                
+                {isAuthenticated && (
+                  <div className="mt-8 pt-8 border-t border-slate-100 dark:border-slate-800">
+                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                       Daily Practice Time
+                    </label>
+                    <select
+                      value={dailyTime}
+                      onChange={(e) => setDailyTime(Number(e.target.value))}
+                      className="w-full h-12 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-4 outline-none"
+                    >
+                      <option value={10}>10 minutes/day</option>
+                      <option value={15}>15 minutes/day</option>
+                      <option value={30}>30 minutes/day</option>
+                      <option value={45}>45 minutes/day</option>
+                    </select>
+                  </div>
+                )}
               </Card>
             </motion.div>
           )}
 
-          {step === 4 && (
+          {step === 4 && !isAuthenticated && (
             <motion.div
               key="step4"
               initial={{ opacity: 0, x: 20 }}
@@ -272,22 +333,7 @@ export default function OnboardingFlow() {
 
                   <p className="text-slate-600 dark:text-slate-400 mb-8 max-w-sm">
                     We&apos;ve prepared a custom curriculum for {name || "you"}.
-                    Practice {dailyTime} minutes a day to achieve your goal.
                   </p>
-                </div>
-
-                <div className="w-full bg-slate-50 dark:bg-slate-900 rounded-2xl p-4 border border-slate-200 dark:border-slate-800 mb-8 flex text-left gap-4">
-                  <div className="w-1.5 rounded-full bg-primary-500" />
-                  <div>
-                    <span className="text-xs font-bold uppercase tracking-wider text-primary-600">
-                      Daily Plan
-                    </span>
-                    <ul className="text-sm text-slate-700 dark:text-slate-300 mt-2 space-y-2">
-                      <li>🔥 5 min AI Conversation</li>
-                      <li>📚 3 New Words</li>
-                      <li>🎯 1 Pronunciation Drill</li>
-                    </ul>
-                  </div>
                 </div>
 
                 <div className="space-y-4">
@@ -316,24 +362,6 @@ export default function OnboardingFlow() {
                       disabled={isLoading}
                     />
                   </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                      Daily Practice Time
-                    </label>
-                    <select
-                      value={dailyTime}
-                      onChange={(e) => setDailyTime(Number(e.target.value))}
-                      disabled={isLoading}
-                      className="w-full h-11 rounded-md border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3 outline-none"
-                    >
-                      <option value={10}>10 minutes/day</option>
-                      <option value={15}>15 minutes/day</option>
-                      <option value={20}>20 minutes/day</option>
-                      <option value={30}>30 minutes/day</option>
-                      <option value={45}>45 minutes/day</option>
-                    </select>
-                  </div>
                 </div>
 
                 <p className="text-center text-sm text-slate-500 mt-6">
@@ -352,13 +380,13 @@ export default function OnboardingFlow() {
             size="lg"
             className="rounded-full shadow-lg hover:shadow-xl transition-all min-w-[160px]"
             onClick={handleNext}
-            disabled={isNextDisabled() || isLoading}
+            disabled={isNextDisabled() || isLoading || isCheckingAuth}
           >
             {isLoading ? (
               <Loader2 className="w-5 h-5 animate-spin" />
             ) : (
               <>
-                {step === 4 ? "Create Account" : "Continue"}
+                {((step === 3 && isAuthenticated) || (step === 4 && !isAuthenticated)) ? "Complete Setup" : "Continue"}
                 <ArrowRight className="w-5 h-5 ml-2" />
               </>
             )}

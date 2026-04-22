@@ -369,3 +369,17 @@ export const GRAMMAR_TOPICS: GrammarTopic[] = [
     ]
   }
 ];
+
+// Helper to get a featured grammar topic of the day deterministically
+export const getDailyGrammarTopic = (): GrammarTopic => {
+  const today = new Date();
+  let offset = 0;
+  
+  if (typeof window !== "undefined") {
+    offset = Number(localStorage.getItem("routine_offset_grammar") || "0");
+  }
+  
+  const baseIndex = today.getDate() + today.getMonth();
+  const index = (baseIndex + offset) % GRAMMAR_TOPICS.length;
+  return GRAMMAR_TOPICS[index];
+};

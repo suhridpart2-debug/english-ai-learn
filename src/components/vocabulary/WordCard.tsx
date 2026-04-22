@@ -23,13 +23,30 @@ export function WordCard({ word, isSaved = false, onSaveToggle, onMarkLearned, o
   const [isPlaying, setIsPlaying] = useState(false);
 
   const handleSaveToggle = async () => {
-    const newState = !saved;
-    setSaved(newState);
-    if (onSaveToggle) onSaveToggle(word.id, newState);
-
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
+
+      const newState = !saved;
+
+      // START: FREEMIUM LIMIT CHECK
+      if (newState) {
+        const usageRes = await fetch('/api/usage/track', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ type: 'vocab_adds' })
+        });
+        const usageData = await usageRes.json();
+
+        if (usageData.limitReached) {
+          window.dispatchEvent(new CustomEvent('open-subscription-modal'));
+          return;
+        }
+      }
+      // END: FREEMIUM LIMIT CHECK
+
+      setSaved(newState);
+      if (onSaveToggle) onSaveToggle(word.id, newState);
 
       if (newState) {
         await supabase.from('saved_words').upsert({ user_id: session.user.id, word_id: word.id });
@@ -38,7 +55,6 @@ export function WordCard({ word, isSaved = false, onSaveToggle, onMarkLearned, o
       }
     } catch (e) {
       console.error("WordCard: Save toggle error:", e);
-      setSaved(!newState); // Revert UI if error
     }
   };
 

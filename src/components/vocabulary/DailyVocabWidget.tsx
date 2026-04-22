@@ -8,7 +8,10 @@ import Link from "next/link";
 import { VocabService } from "@/lib/services/vocabService";
 import { VocabularyWord } from "@/lib/data/vocabularyData";
 
-export function DailyVocabWidget() {
+import { cn } from "@/lib/utils";
+import { LockedCard } from "@/components/usage/LockedCard";
+
+export function DailyVocabWidget({ isPremium }: { isPremium: boolean }) {
   const [words, setWords] = useState<VocabularyWord[]>([]);
   const [learnedIds, setLearnedIds] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -48,40 +51,62 @@ export function DailyVocabWidget() {
           </div>
           <h2 className="text-xl font-display font-bold text-slate-900 dark:text-white">Vocabulary of the Day</h2>
         </div>
-        <Link href="/vocabulary">
-           <Button variant="ghost" size="sm" className="text-primary-600 font-bold">
-              Learn More <ArrowRight className="w-4 h-4 ml-1" />
-           </Button>
-        </Link>
+        {!isPremium && (
+          <span className="text-[10px] font-bold bg-amber-100 dark:bg-amber-900/30 text-amber-600 px-2 py-1 rounded-full uppercase tracking-widest">
+            Free Preview
+          </span>
+        )}
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-        {words.map((word) => {
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+        {words.map((word, index) => {
           const isLearned = learnedIds.includes(word.id);
+          const isLocked = !isPremium && index >= 2;
+
+          const card = (
+            <Card className={cn(
+              "p-4 h-full flex flex-col items-center text-center transition-all border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 hover:shadow-md cursor-pointer relative group",
+              isLearned && "bg-emerald-50/50 dark:bg-emerald-950/10 border-emerald-100 dark:border-emerald-900/30",
+              isLocked && "opacity-40 grayscale"
+            )}>
+              {isLearned && !isLocked && (
+                 <div className="absolute top-2 right-2">
+                   <Sparkles className="w-3 h-3 text-emerald-500" />
+                 </div>
+              )}
+              <span className="text-lg font-black text-slate-900 dark:text-white mb-1 group-hover:text-primary-600">
+                {word.word}
+              </span>
+              <span className="text-[10px] font-medium text-slate-400 mb-2 italic">
+                /{word.pronunciation}/
+              </span>
+              <p className="text-[11px] text-slate-600 dark:text-slate-400 line-clamp-2 leading-relaxed">
+                {word.meaning}
+              </p>
+              <div className={`mt-auto pt-3 text-[9px] font-bold uppercase tracking-widest ${
+                word.difficulty === 'Beginner' ? 'text-green-500' : 
+                word.difficulty === 'Intermediate' ? 'text-amber-500' : 'text-purple-500'
+              }`}>
+                {word.difficulty}
+              </div>
+            </Card>
+          );
+
+          if (isLocked) {
+            return (
+              <LockedCard 
+                key={word.id} 
+                title="Expert Vocab" 
+                description="Unlock full daily 5-word set"
+              >
+                {card}
+              </LockedCard>
+            );
+          }
+
           return (
             <Link key={word.id} href={`/vocabulary?word=${word.id}`}>
-              <Card className={`p-4 h-full flex flex-col items-center text-center transition-all hover:border-primary-300 dark:hover:border-primary-800 hover:shadow-md cursor-pointer relative group ${isLearned ? 'bg-emerald-50/50 dark:bg-emerald-950/10 border-emerald-100 dark:border-emerald-900/30' : ''}`}>
-                {isLearned && (
-                   <div className="absolute top-2 right-2">
-                     <Sparkles className="w-3 h-3 text-emerald-500" />
-                   </div>
-                )}
-                <span className="text-lg font-black text-slate-900 dark:text-white mb-1 group-hover:text-primary-600">
-                  {word.word}
-                </span>
-                <span className="text-[10px] font-medium text-slate-400 mb-2 italic">
-                  /{word.pronunciation}/
-                </span>
-                <p className="text-[11px] text-slate-600 dark:text-slate-400 line-clamp-2 leading-relaxed">
-                  {word.meaning}
-                </p>
-                <div className={`mt-auto pt-3 text-[9px] font-bold uppercase tracking-widest ${
-                  word.difficulty === 'Beginner' ? 'text-green-500' : 
-                  word.difficulty === 'Intermediate' ? 'text-amber-500' : 'text-purple-500'
-                }`}>
-                  {word.difficulty}
-                </div>
-              </Card>
+              {card}
             </Link>
           );
         })}

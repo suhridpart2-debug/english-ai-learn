@@ -1,6 +1,6 @@
-import { NextResponse } from "next/server";
-import { PERSONAS, PersonaId } from "@/lib/data/personas";
 import { createClient } from "@/lib/supabase/server";
+import { isPremium } from "@/lib/services/subscriptionService";
+import { SUBSCRIPTION_CONFIG } from "@/lib/config/subscription";
 
 export async function POST(req: Request) {
   try {
@@ -10,6 +10,30 @@ export async function POST(req: Request) {
     if (!user) {
       return NextResponse.json({ error: "Unauthorized access" }, { status: 401 });
     }
+
+    // --- STRIDE PREMIUM CHECK ---
+    const { data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).single();
+    const premium = isPremium(profile);
+
+    if (!premium) {
+      const { data: usage } = await supabase
+        .from('daily_usage')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('usage_date', new Date().toISOString().split('T')[0])
+        .single();
+
+      const hits = usage?.ai_messages || 0;
+      if (hits >= SUBSCRIPTION_CONFIG.LIMITS.AI_MESSAGES_PER_DAY) {
+        return NextResponse.json({ 
+          error: "Daily limit reached", 
+          code: "LIMIT_REACHED",
+          current: hits,
+          limit: SUBSCRIPTION_CONFIG.LIMITS.AI_MESSAGES_PER_DAY
+        }, { status: 403 });
+      }
+    }
+    // ----------------------------
 
     const { 
       message, 
@@ -129,6 +153,13 @@ export async function POST(req: Request) {
       console.error("Failed to parse JSON from AI", cleanContent);
       return NextResponse.json({ error: "AI returned invalid JSON" }, { status: 500 });
     }
+
+    // Increment usage atomically
+    await supabase.rpc('increment_usage_v2', {
+      u_id: user.id,
+      u_date: new Date().toISOString().split('T')[0],
+      u_col: 'ai_messages'
+    });
 
     return NextResponse.json(parsed);
   } catch (error) {

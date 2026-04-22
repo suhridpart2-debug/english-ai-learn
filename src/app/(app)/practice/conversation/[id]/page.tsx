@@ -9,6 +9,8 @@ import { Button } from "@/components/ui/button";
 import { ChevronLeft, Mic, Square, Loader2, Sparkles, CheckCircle2, AlertCircle, RefreshCw } from "lucide-react";
 import Link from "next/link";
 import { Card } from "@/components/ui/card";
+import { PremiumPageGuard } from "@/components/usage/PremiumPageGuard";
+import { isPremium } from "@/lib/services/subscriptionService";
 
 interface Message {
   id: string;
@@ -54,11 +56,48 @@ export default function ConversationRoom() {
     scrollToBottom();
   }, [messages, isProcessing]);
 
+  // FREEMIUM ROOM PROTECTION
+  const [premium, setPremium] = useState(false);
+  const [checkingPremium, setCheckingPremium] = useState(true);
+
+  useEffect(() => {
+    async function checkPremium() {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        const { data: profile } = await supabase.from('profiles').select('*').eq('id', session.user.id).single();
+        setPremium(isPremium(profile));
+      }
+      setCheckingPremium(false);
+    }
+    checkPremium();
+  }, []);
+
+  const personaIndex = Object.values(PERSONAS).findIndex(p => p.id === personaId);
+  const isPremiumPersona = personaIndex >= 2;
+  const isPremiumScenario = !!scenarioId; // All guided scenarios except first 2? User said first 2 free.
+
   // Initialize Session
   useEffect(() => {
     if (!persona) {
       router.push("/practice/conversation");
       return;
+    }
+
+    if (!checkingPremium && !premium) {
+       // Check if this persona is premium (indices 2+)
+       const personaEntries = Object.values(PERSONAS);
+       const pIdx = personaEntries.findIndex(p => p.id === personaId);
+       
+       // Handle scenario checks (only first 2 free)
+       // Since the rotation is complex, we just allow the first 2 scenarios in the constant array as free for now
+       // or pass a 'free' flag from the selection page. 
+       // For now, let's just use persona gating and a simple flag check.
+       const isPremiumScenario = scenarioId && !CONVERSATION_SCENARIOS.slice(0, 2).find(s => s.id === scenarioId);
+
+       if (pIdx >= 2 || isPremiumScenario) {
+          // Block initialization if forbidden
+          return;
+       }
     }
 
     const initSession = async () => {
@@ -117,6 +156,18 @@ export default function ConversationRoom() {
   const startRecording = async () => {
     if (isProcessing) return;
     
+    // FREEMIUM LIMIT CHECK
+    try {
+      const usageRes = await fetch('/api/usage/track');
+      const usageData = await usageRes.json();
+
+      if (!usageData.is_premium && usageData.ai_messages >= usageData.limits.AI_MESSAGES_PER_DAY) {
+        window.dispatchEvent(new CustomEvent('open-subscription-modal'));
+        return;
+      }
+    } catch (e) {}
+    // END: FREEMIUM LIMIT CHECK
+
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       const recorder = new MediaRecorder(stream);
@@ -234,6 +285,12 @@ export default function ConversationRoom() {
       const aiData = await aiRes.json();
       
       if (aiData.reply) {
+        // INCREMENT USAGE AFTER SUCCESSFUL AI REPLY
+        await fetch('/api/usage/track', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ type: 'ai_messages' })
+        });
         let savedMsgId = Date.now().toString() + "_agent";
         if (sessionDbId) {
           const { data: dbMsg } = await supabase.from("conversation_messages")
@@ -275,9 +332,9 @@ export default function ConversationRoom() {
 
   if (!persona) return null;
 
-  return (
+  const content = (
     <div className="max-w-4xl mx-auto h-[100dvh] md:h-[calc(100vh-2rem)] md:my-4 flex flex-col bg-white dark:bg-slate-950 border-x border-slate-200 dark:border-slate-800 md:border md:rounded-3xl overflow-hidden shadow-2xl relative">
-       {/* Header */}
+       {/* ... existing header ... */}
        <header className="p-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between shrink-0 bg-white/80 dark:bg-slate-950/80 backdrop-blur-md z-10 relative">
           <div className="flex items-center gap-4">
              <Link href="/practice/conversation">
@@ -287,7 +344,7 @@ export default function ConversationRoom() {
              </Link>
              <div className="flex items-center gap-3">
                 <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${mode === 'guided' ? 'bg-indigo-100 text-indigo-600' : persona.color}`}>
-                   <span className="font-bold text-lg">{mode === 'guided' ? scenario?.title[0] : persona.name[0]}</span>
+                   <span className="font-bold text-lg">{mode === 'guided' ? (scenario?.title?.[0] || 'S') : persona.name[0]}</span>
                 </div>
                 <div>
                    <h2 className="font-bold text-slate-900 dark:text-white leading-tight">
@@ -314,7 +371,6 @@ export default function ConversationRoom() {
                    <p className="whitespace-pre-wrap">{msg.content}</p>
                 </div>
 
-                {/* Inline Feedback Card (only shown for user messages if feedback exists) */}
                 {msg.feedback && (
                   <div className="mt-2 w-full max-w-[85%] animate-in fade-in slide-in-from-top-2">
                     <Card className="p-4 bg-amber-50 dark:bg-amber-900/10 border-amber-200 dark:border-amber-900/30">
@@ -364,36 +420,23 @@ export default function ConversationRoom() {
           )}
        </div>
 
-       {/* Floating Mic Bottom Bar */}
+       {/* Mic Bar */}
        <div className="absolute bottom-6 left-0 w-full px-4">
           <div className="max-w-md mx-auto bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border border-slate-200 dark:border-slate-800 shadow-2xl p-4 rounded-full flex items-center justify-between gap-4">
-            
             <div className="text-sm font-medium text-slate-500 pl-4 w-1/3">
               {isRecording ? <span className="text-red-500 flex items-center gap-2 animate-pulse"><div className="w-2 h-2 bg-red-500 rounded-full" /> Recording...</span> : "Tap to speak"}
             </div>
-
             <Button 
                size="icon"
                className={`w-20 h-20 rounded-full shrink-0 shadow-2xl transition-all duration-300 relative ${
-                 isRecording 
-                   ? 'bg-red-500 scale-110 shadow-red-500/50' 
-                   : 'bg-primary-600 hover:bg-primary-700 hover:scale-110 shadow-primary-500/50'
+                 isRecording ? 'bg-red-500 scale-110 shadow-red-500/50' : 'bg-primary-600 hover:bg-primary-700 hover:scale-110 shadow-primary-500/50'
                }`}
                onClick={isRecording ? stopRecording : startRecording}
                disabled={isProcessing}
             >
-               {isRecording && (
-                 <div className="absolute inset-0 rounded-full bg-red-500 animate-ping opacity-20" />
-               )}
-               {isProcessing ? (
-                 <Loader2 className="w-8 h-8 text-white animate-spin" />
-               ) : isRecording ? (
-                 <Square className="w-8 h-8 fill-white" />
-               ) : (
-                 <Mic className="w-10 h-10 text-white" />
-               )}
+               {isRecording && <div className="absolute inset-0 rounded-full bg-red-500 animate-ping opacity-20" />}
+               {isProcessing ? <Loader2 className="w-8 h-8 text-white animate-spin" /> : isRecording ? <Square className="w-8 h-8 fill-white" /> : <Mic className="w-10 h-10 text-white" />}
             </Button>
-            
             <div className="w-1/3 flex justify-end pr-2">
               <Button variant="ghost" size="icon" className="rounded-full text-slate-400" onClick={() => setMessages(messages.slice(0,1))}>
                 <RefreshCw className="w-5 h-5" />
@@ -401,7 +444,24 @@ export default function ConversationRoom() {
             </div>
           </div>
        </div>
-
     </div>
   );
+
+  const personaEntries = Object.values(PERSONAS);
+  const pIdx = personaEntries.findIndex(p => p.id === personaId);
+  const isPremiumScenario = scenarioId && !CONVERSATION_SCENARIOS.slice(0, 2).find(s => s.id === scenarioId);
+  const isProRoom = pIdx >= 2 || isPremiumScenario;
+
+  if (isProRoom) {
+    return (
+      <PremiumPageGuard 
+        title="Pro Practice Room" 
+        description={`This ${mode === 'guided' ? 'specialized scenario' : 'expert persona'} is only available to Premium Pro members.`}
+      >
+        {content}
+      </PremiumPageGuard>
+    );
+  }
+
+  return content;
 }

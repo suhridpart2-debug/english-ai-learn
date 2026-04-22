@@ -12,14 +12,88 @@ import {
 import { AuthGuard } from "@/components/layout/AuthGuard";
 import Link from "next/link";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
+import { UsageTracker } from "@/components/usage/UsageTracker";
+import { SubscriptionModal } from "@/components/usage/SubscriptionModal";
+import ActivityTracker from "@/components/layout/ActivityTracker";
 
-export default function AppLayout({
+import { createServerClient } from "@supabase/ssr";
+import { cookies } from "next/headers";
+import { ShieldAlert } from "lucide-react";
+
+export default async function AppLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const cookieStore = await cookies();
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get(name: string) {
+          return cookieStore.get(name)?.value;
+        },
+      },
+    }
+  );
+
+  const { data: { user } } = await supabase.auth.getUser();
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("is_admin")
+    .eq("id", user?.id)
+    .single();
+
+  const navItems = [
+    {
+      href: "/dashboard",
+      icon: LayoutDashboard,
+      label: "Dashboard",
+    },
+    {
+      href: "/learn",
+      icon: BookOpen,
+      label: "Learn",
+    },
+    {
+      href: "/practice",
+      icon: Dumbbell,
+      label: "Practice",
+    },
+    {
+      href: "/practice/conversation",
+      icon: MessageSquareText,
+      label: "AI Conversation",
+    },
+    {
+      href: "/history",
+      icon: Clock,
+      label: "History",
+    },
+    {
+      href: "/profile",
+      icon: User,
+      label: "Profile",
+    },
+    {
+      href: "/billing",
+      icon: CreditCard,
+      label: "Billing",
+    },
+  ];
+
+  if (profile?.is_admin || user?.email === "suhridpart2@gmail.com") {
+    navItems.push({
+      href: "/admin",
+      icon: ShieldAlert,
+      label: "Admin Panel",
+    });
+  }
+
   return (
     <AuthGuard>
+      <ActivityTracker />
       <div className="min-h-screen bg-slate-50 pb-32 transition-colors dark:bg-slate-950 md:pb-0 md:pl-64">
         {/* Desktop Sidebar (Hidden on mobile) */}
         <aside className="fixed left-0 top-0 hidden h-screen w-64 flex-col border-r border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-950 md:flex">
@@ -37,43 +111,7 @@ export default function AppLayout({
           </div>
 
           <nav className="flex-1 space-y-1 p-4">
-            {[
-              {
-                href: "/dashboard",
-                icon: LayoutDashboard,
-                label: "Dashboard",
-              },
-              {
-                href: "/learn",
-                icon: BookOpen,
-                label: "Learn",
-              },
-              {
-                href: "/practice",
-                icon: Dumbbell,
-                label: "Practice",
-              },
-              {
-                href: "/practice/conversation",
-                icon: MessageSquareText,
-                label: "AI Conversation",
-              },
-              {
-                href: "/history",
-                icon: Clock,
-                label: "History",
-              },
-              {
-                href: "/profile",
-                icon: User,
-                label: "Profile",
-              },
-              {
-                href: "/billing",
-                icon: CreditCard,
-                label: "Billing",
-              },
-            ].map(({ href, icon: Icon, label }) => (
+            {navItems.map(({ href, icon: Icon, label }) => (
               <Link
                 key={href}
                 href={href}
@@ -92,7 +130,7 @@ export default function AppLayout({
         </main>
 
         {/* Mobile Bottom Nav */}
-        <MobileNav />
+        <MobileNav isAdmin={profile?.is_admin || user?.email === "suhridpart2@gmail.com"} />
       </div>
     </AuthGuard>
   );

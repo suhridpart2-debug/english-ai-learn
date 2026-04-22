@@ -79,9 +79,26 @@ export default function DashboardPage() {
         }
 
         const userId = session.user.id;
+        const userMetadata = session.user.user_metadata;
 
-        const [profileRes, streakRes, vocabRes, savedVideosRes] = await Promise.all([
-          supabase.from("profiles").select("*").eq("id", userId).single(),
+        // 1. Fetch Profile and handle Name Sync if needed
+        let { data: profileData } = await supabase.from("profiles").select("*").eq("id", userId).single();
+        
+        if (profileData) {
+          // If name is default/missing but we have it in Google Metadata, sync it
+          const isDefaultName = !profileData.name || profileData.name === 'User' || profileData.name === 'Student';
+          if (isDefaultName && userMetadata?.full_name) {
+            const { data: updatedProfile } = await supabase
+              .from('profiles')
+              .update({ name: userMetadata.full_name })
+              .eq('id', userId)
+              .select()
+              .single();
+            if (updatedProfile) profileData = updatedProfile;
+          }
+        }
+
+        const [streakRes, vocabRes, savedVideosRes] = await Promise.all([
           supabase.from("streaks").select("*").eq("user_id", userId).single(),
           supabase
             .from("saved_words")
@@ -176,12 +193,10 @@ export default function DashboardPage() {
           vocab_count: vocabRes.count || 0,
         });
 
-        setProfile(profileRes.data);
+        setProfile(profileData);
         setFocusAreas(processedFocus);
         setRecentActivity(last);
 
-        // Update Saved Content Section
-        // (Implementation note: This will be used in the UI below)
         setIsLoading(false);
 
         const mockChart = [
@@ -322,9 +337,9 @@ export default function DashboardPage() {
         </Card>
       </div>
 
-      <DailyVocabWidget />
+      <DailyVocabWidget isPremium={isPremium(profile)} />
 
-      <DailyVideoWidget />
+      <DailyVideoWidget isPremium={isPremium(profile)} />
 
       <SavedContentWidget />
 
